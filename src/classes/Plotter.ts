@@ -18,7 +18,7 @@ const defaultOptions = {
   bot: {
     path: '',
     initDuration: 1000,
-    disableMotorsOnComplete: true,
+    disableMotorsOnFinish: true,
     stepper: {
       stepMode: 2 as const,
       stepAngle: 1.8,
@@ -63,7 +63,7 @@ export default class Plotter {
       logger.setDefaultLevel('debug');
     }
   }
-  public plot = async (svg: string, plotOptions: Partial<PlotOptions> = {}) => {
+  public plot = (svg: string, plotOptions: Partial<PlotOptions> = {}) => {
     // parse incoming svg
     const { layers, dimensions } = SVGParser.parse(svg);
 

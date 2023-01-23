@@ -148,7 +148,7 @@ export class Operator {
   };
   private getEndOperations = () => {
     const {
-      bot: { disableMotorsOnComplete },
+      bot: { disableMotorsOnFinish },
     } = this.options;
 
     const operations: Operation[] = [];
@@ -159,7 +159,7 @@ export class Operator {
     }
 
     // disable motors
-    if (disableMotorsOnComplete) {
+    if (disableMotorsOnFinish) {
       operations.push({ command: 'EM,0,0', duration: 1000 });
     }
 

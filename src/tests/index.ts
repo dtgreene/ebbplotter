@@ -4,6 +4,7 @@ import * as path from 'path';
 
 import Plotter from '../classes/Plotter';
 
+/** Not a full integration test suite but a way to test basic functionality when developing */
 test('plot', async () => {
   const svgPath = path.resolve(__dirname, './smiley_processed.svg');
   const svg = fs.readFileSync(svgPath, 'utf-8').toString();
