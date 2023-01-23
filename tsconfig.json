@@ -11,6 +11,9 @@
     "baseUrl": "src",
     "paths": {
       "*": ["node_modules/*"]
-    }
+    },
+    "declaration": true
   },
+  "files": ["src/index.ts"],
+  "exclude": ["src/test/*"]
 }
