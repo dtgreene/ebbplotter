@@ -1,7 +1,7 @@
-import { flatten } from 'lodash';
+import flatten from 'lodash.flatten';
 import logger from 'loglevel';
 
-import { Operation, PlotterOptions, Layer } from '../types';
+import { Operation, EBBPlotterOptions, Layer } from '../types';
 import { distanceTo, percentBetween } from '../utils';
 
 // map of the micro step modes to the micro step values
@@ -14,12 +14,12 @@ const MicroSteps = {
 };
 
 export class Operator {
-  private options: PlotterOptions;
+  private options: EBBPlotterOptions;
   private stepsPerMM: number;
   private penUpSpeed: number;
   private penDownSpeed: number;
   private position = { x: 0, y: 0 };
-  constructor(options: PlotterOptions) {
+  constructor(options: EBBPlotterOptions) {
     this.options = options;
 
     // pre-calculate some values for use later

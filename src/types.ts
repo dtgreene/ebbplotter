@@ -20,7 +20,7 @@ export type RecursivePartial<T> = {
 
 export type StepMode = 1 | 2 | 3 | 4 | 5;
 
-export type PlotterOptions = {
+export type EBBPlotterOptions = {
   /** Flag to use virtual mode.
    * If true, plotting will only be simulated.
    * No serial connection will be made and no commands will be sent. */

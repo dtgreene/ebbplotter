@@ -1,8 +1,8 @@
-import { merge } from 'lodash';
+import merge from 'lodash.merge'
 import logger from 'loglevel';
 
 import {
-  PlotterOptions,
+  EBBPlotterOptions,
   PlotOptions,
   Layer,
   Operation,
@@ -48,12 +48,12 @@ const defaultOptions = {
   },
 };
 
-export default class Plotter {
+export class EBBPlotter {
   private inProgress = false;
   private operations: Operation[] = [];
-  private options: PlotterOptions = defaultOptions;
+  private options: EBBPlotterOptions = defaultOptions;
   private serial: SerialController;
-  constructor(options?: Partial<RecursivePartial<PlotterOptions>>) {
+  constructor(options?: Partial<RecursivePartial<EBBPlotterOptions>>) {
     this.options = merge(this.options, options);
     this.serial = new SerialController(this.options.bot.path, {
       isVirtual: this.options.isVirtual,

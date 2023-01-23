@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "ES6",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "target": "es6",
@@ -9,11 +9,12 @@
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": "src",
-    "paths": {
-      "*": ["node_modules/*"]
-    },
     "declaration": true
   },
   "files": ["src/index.ts"],
-  "exclude": ["src/test/*"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"],
+  "ts-node": {
+    "esm": true
+  }
 }

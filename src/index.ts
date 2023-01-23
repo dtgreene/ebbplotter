@@ -1,2 +1,2 @@
-export { default as Plotter } from './classes/Plotter';
+export { EBBPlotter } from './classes/EBBPlotter';
 export * from './types';
