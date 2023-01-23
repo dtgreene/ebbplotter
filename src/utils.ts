@@ -1,13 +1,3 @@
-import colors from 'colors';
-
-export function debugLog(message: string) {
-  log(colors.green(message));
-}
-
-export function log(message: string) {
-  console.log(`[EBBPLOTTER]: ${message}`);
-}
-
 export function percentBetween(min: number, max: number, percent: number) {
   return (max - min) * (percent * 0.01) + min;
 }

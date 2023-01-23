@@ -1,4 +1,5 @@
 import { ReadlineParser, SerialPort } from 'serialport';
+import logger from 'loglevel';
 
 const EBB_SERIAL_INFO = {
   name: 'EiBotBoard',
@@ -29,14 +30,14 @@ export class SerialController {
 
       // skip connection if already connected
       if (this.isConnected) {
-        console.log('Skipping serial connection; already connected');
+        logger.debug('Skipping serial connection; already connected');
         resolve();
         return;
       }
 
       // skip connection in virtual mode
       if (isVirtual) {
-        console.log('Skipping serial connection; in virtual mode');
+        logger.debug('Skipping serial connection; in virtual mode');
         this.isConnected = true;
         resolve();
         return;
@@ -50,22 +51,22 @@ export class SerialController {
         if (autoPath) {
           targetPath = autoPath;
         } else {
-          reject('No serial path was given and no ebb boards were found');
+          reject('No serial path was given and no ebb devices were found');
           return;
         }
       } else {
-        console.log(`Using given serial path: ${targetPath}`);
+        logger.debug('Skipping serial connection; in virtual mode');
       }
 
-      console.log(`Attempting to connect to ebb board at path: ${targetPath}`);
+      logger.debug(`Attempting to connect to ebb device at path: ${targetPath}`);
 
       // create serial port
       this.port = new SerialPort(
         { path: targetPath, baudRate: EBB_SERIAL_INFO.baudRate },
         (error) => {
           if (!error) {
-            console.log(
-              `Connected to ebb board at path ${targetPath} at ${EBB_SERIAL_INFO.baudRate} bps`,
+            logger.debug(
+              `Connected to ebb device at path ${targetPath} at ${EBB_SERIAL_INFO.baudRate} bps`,
             );
             this.isConnected = true;
             resolve();
@@ -88,7 +89,7 @@ export class SerialController {
       try {
         const { isVirtual } = this.options;
         if (isVirtual) {
-          console.log(`Writing command virtually: ${message}`);
+          logger.debug(`Writing command virtually: ${message}`);
           resolve();
           return;
         }
@@ -118,14 +119,14 @@ export class SerialController {
     try {
       const message = chunk.toString().trim();
       if (message !== EBB_SERIAL_INFO.ack) {
-        console.log(`Non-ack message received from the ebb board: ${message}`);
+        logger.debug(`Non-ack message received from the ebb device: ${message}`);
       }
     } catch (e) {
-      console.log('Failed to parse message from the ebb board');
+      logger.debug('Failed to parse message from the ebb device');
     }
   };
   private getSerialPort = async () => {
-    console.log('Discovering serial devices...');
+    logger.debug('Discovering serial devices...');
 
     const { manufacturer, productId, name } = EBB_SERIAL_INFO;
     const botMaker = manufacturer.toLowerCase();
@@ -146,7 +147,7 @@ export class SerialController {
       );
       const portPnpId = (port.pnpId || '').toLowerCase();
 
-      console.log(`Found serial device at path: ${port.path}`);
+      logger.debug(`Found serial device at path: ${port.path}`);
 
       // OS specific board detection based on serialport 2.0.5
       switch (process.platform) {
