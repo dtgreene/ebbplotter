@@ -116,7 +116,7 @@ export class EBBPlotter {
         throw new Error(
           `Could not find specified layer id: ${layerId}; Available layers: ${layers
             .map(({ id }) => id)
-            .join(', ')}`
+            .join(', ')}`,
         );
       }
     } else {
@@ -164,7 +164,7 @@ export class EBBPlotter {
       ['-o', JSON.stringify(this.options)],
       {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-      }
+      },
     );
 
     // attach debug listeners
@@ -172,7 +172,7 @@ export class EBBPlotter {
       this.runnerProcess.stdout.on('data', this.createRunnerOutput('RUNNER'));
       this.runnerProcess.stderr.on(
         'data',
-        this.createRunnerOutput('RUNNER ERROR')
+        this.createRunnerOutput('RUNNER ERROR'),
       );
     }
 

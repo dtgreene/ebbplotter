@@ -18,7 +18,7 @@ export class SerialController {
   public isConnected = false;
   private options: SerialControllerOptions;
   private path: string;
-  private port: SerialPort | undefined = undefined;
+  private port: SerialPort;
   constructor(path: string, options: SerialControllerOptions) {
     this.path = path;
     this.options = options;
@@ -65,14 +65,14 @@ export class SerialController {
         (error) => {
           if (!error) {
             console.log(
-              `Connected to ebb board at path ${targetPath} at ${EBB_SERIAL_INFO.baudRate} bps`
+              `Connected to ebb board at path ${targetPath} at ${EBB_SERIAL_INFO.baudRate} bps`,
             );
             this.isConnected = true;
             resolve();
           } else {
             reject(error);
           }
-        }
+        },
       );
       // add event listeners
       this.port.on('disconnect', this.onPortClose);
@@ -92,6 +92,7 @@ export class SerialController {
           resolve();
           return;
         }
+
         // timeout before giving up on writing
         const writeTimeout = setTimeout(() => {
           reject(`Serial write failed due to timeout: ${message}`);
@@ -141,7 +142,7 @@ export class SerialController {
       const portMaker = (port.manufacturer || '').toLowerCase();
       // convert reported product ID from hex string to decimal
       const portProductId = parseInt(
-        `0x${(port.productId || '').toLowerCase()}`
+        `0x${(port.productId || '').toLowerCase()}`,
       );
       const portPnpId = (port.pnpId || '').toLowerCase();
 

@@ -68,11 +68,11 @@ export class SVGParser {
 
       // add polygon movements
       layer.paths = layer.paths.concat(
-        this.parsePolyShapes(polygons, widthRatio, heightRatio)
+        this.parsePolyShapes(polygons, widthRatio, heightRatio),
       );
       // add polyline movements
       layer.paths = layer.paths.concat(
-        this.parsePolyShapes(polylines, widthRatio, heightRatio)
+        this.parsePolyShapes(polylines, widthRatio, heightRatio),
       );
 
       // add this layer
@@ -87,7 +87,7 @@ export class SVGParser {
   private static parsePolyShapes = (
     shapes: PolyShape[],
     widthRatio: number,
-    heightRatio: number
+    heightRatio: number,
   ) => {
     const paths: Path[] = [];
     shapes.forEach((shape) => {

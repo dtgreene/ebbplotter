@@ -1,8 +1,16 @@
 import { flatten } from 'lodash';
 
 import { Operation, PlotterOptions, Layer } from '../types';
-import { MicroSteps } from '../constants';
 import { debugLog, distanceTo, percentBetween } from '../utils';
+
+// map of the micro step modes to the micro step values
+const MicroSteps = {
+  1: 16,
+  2: 8,
+  3: 4,
+  4: 2,
+  5: 1,
+};
 
 export class Operator {
   private options: PlotterOptions;
@@ -25,14 +33,14 @@ export class Operator {
     this.penUpSpeed = percentBetween(
       stepper.speed.min,
       stepper.speed.max,
-      stepper.speed.up
+      stepper.speed.up,
     );
 
     // pen down speed in steps per second
     this.penDownSpeed = percentBetween(
       stepper.speed.min,
       stepper.speed.max,
-      stepper.speed.down
+      stepper.speed.down,
     );
   }
   public getPlotOperations = (layers: Layer[]) => {
@@ -121,7 +129,7 @@ export class Operator {
 
     // servo settings
     const servoMin = Math.round(
-      percentBetween(servo.min, servo.max, servo.down)
+      percentBetween(servo.min, servo.max, servo.down),
     );
     const servoMax = Math.round(percentBetween(servo.min, servo.max, servo.up));
 
@@ -153,7 +161,7 @@ export class Operator {
     const operations: Operation[] = [];
 
     // return to home
-    if(this.position.x !== 0 || this.position.y !== 0) {
+    if (this.position.x !== 0 || this.position.y !== 0) {
       operations.push(this.getMoveOperation(0, 0, this.penUpSpeed));
     }
 
