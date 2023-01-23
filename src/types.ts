@@ -27,8 +27,8 @@ export type PlotterOptions = {
   isVirtual: boolean;
   /** If true, debug messages will be logged to the console */
   isDebug: boolean;
-  /** Bot-related options */
-  bot: {
+  /** Machine-related options */
+  machine: {
     /** The target serial path to connect to.  If none is given, an attempt will be made to locate the ebb automatically. */
     path: string;
     /** Acceleration options */

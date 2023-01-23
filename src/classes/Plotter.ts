@@ -1,4 +1,4 @@
-import { merge } from 'lodash';
+import merge from 'lodash.merge'
 import logger from 'loglevel';
 
 import {
@@ -15,7 +15,7 @@ import { SerialController } from './SerialController';
 const defaultOptions = {
   isVirtual: false,
   isDebug: false,
-  bot: {
+  machine: {
     path: '',
     initDuration: 1000,
     disableMotorsOnFinish: true,
@@ -43,7 +43,6 @@ const defaultOptions = {
       max: 27831,
       up: 70,
       down: 30,
-      invert: false,
     },
   },
 };
@@ -55,7 +54,7 @@ export default class Plotter {
   private serial: SerialController;
   constructor(options?: Partial<RecursivePartial<PlotterOptions>>) {
     this.options = merge(this.options, options);
-    this.serial = new SerialController(this.options.bot.path, {
+    this.serial = new SerialController(this.options.machine.path, {
       isVirtual: this.options.isVirtual,
     });
 
@@ -76,7 +75,7 @@ export default class Plotter {
 
     // check travel limits
     const {
-      bot: { stepper, limits },
+      machine: { stepper, limits },
     } = this.options;
 
     if (!stepper.swapAxes) {

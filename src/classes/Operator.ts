@@ -1,4 +1,4 @@
-import { flatten } from 'lodash';
+import flatten from 'lodash.flatten';
 import logger from 'loglevel';
 
 import { Operation, PlotterOptions, Layer } from '../types';
@@ -24,7 +24,7 @@ export class Operator {
 
     // pre-calculate some values for use later
     const {
-      bot: { stepper },
+      machine: { stepper },
     } = this.options;
 
     // steps per mm
@@ -46,7 +46,7 @@ export class Operator {
   }
   public getPlotOperations = (layers: Layer[]) => {
     const {
-      bot: { servo },
+      machine: { servo },
     } = this.options;
 
     // debug logging
@@ -56,8 +56,8 @@ export class Operator {
     const operations: Operation[] = [];
 
     // create the pen operations
-    const raisePen = { command: 'SP,0', duration: servo.duration };
-    const lowerPen = { command: 'SP,1', duration: servo.duration };
+    const raisePen = { command: 'SP,${}', duration: servo.duration };
+    const lowerPen = { command: 'SP,${}', duration: servo.duration };
 
     // all layers and movements are stored in a flat array
     layers.forEach(({ paths }) => {
@@ -94,7 +94,7 @@ export class Operator {
   };
   public getTestOperations = () => {
     const {
-      bot: { servo },
+      machine: { servo },
     } = this.options;
 
     // debug logging
@@ -117,7 +117,7 @@ export class Operator {
   };
   private getStartOperations = () => {
     const {
-      bot: { initDuration, stepper, servo },
+      machine: { initDuration, stepper, servo },
     } = this.options;
 
     // servo settings
@@ -148,7 +148,7 @@ export class Operator {
   };
   private getEndOperations = () => {
     const {
-      bot: { disableMotorsOnFinish },
+      machine: { disableMotorsOnFinish },
     } = this.options;
 
     const operations: Operation[] = [];
@@ -166,8 +166,8 @@ export class Operator {
     return operations;
   };
   private getMoveOperation = (x: number, y: number, stepsPerSecond: number) => {
-    const { bot } = this.options;
-    const { swapAxes } = bot.stepper;
+    const { machine } = this.options;
+    const { swapAxes } = machine.stepper;
 
     const x1 = x;
     const y1 = y;
@@ -199,8 +199,8 @@ export class Operator {
     }
   };
   private getStepsPerMM = () => {
-    const { bot } = this.options;
-    const { stepMode, stepAngle, beltPitch, toothCount } = bot.stepper;
+    const { machine } = this.options;
+    const { stepMode, stepAngle, beltPitch, toothCount } = machine.stepper;
 
     const microSteps = MicroSteps[stepMode];
     const stepsPerMM =
