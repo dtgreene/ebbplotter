@@ -20,15 +20,15 @@ export type RecursivePartial<T> = {
 
 export type StepMode = 1 | 2 | 3 | 4 | 5;
 
-export type EBBPlotterOptions = {
+export type PlotterOptions = {
   /** Flag to use virtual mode.
    * If true, plotting will only be simulated.
    * No serial connection will be made and no commands will be sent. */
   isVirtual: boolean;
   /** If true, debug messages will be logged to the console */
   isDebug: boolean;
-  /** Bot-related options */
-  bot: {
+  /** Machine-related options */
+  machine: {
     /** The target serial path to connect to.  If none is given, an attempt will be made to locate the ebb automatically. */
     path: string;
     /** Acceleration options */
