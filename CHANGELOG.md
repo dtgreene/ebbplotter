@@ -1,5 +1,11 @@
 # ebbplotter
 
+## 0.0.3
+
+### Patch Changes
+
+- Remove runner and added readme
+
 ## 0.0.2
 
 ### Patch Changes
