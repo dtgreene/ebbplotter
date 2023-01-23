@@ -1,13 +1,13 @@
 {
   "name": "ebbplotter",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "ts-node src/tests/index.ts",
     "publish-package": "changeset version && changeset publish",
-    "format": "npx prettier --write ."
+    "format": "npx prettier --write src"
   },
   "repository": {
     "type": "git",

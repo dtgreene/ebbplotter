@@ -58,7 +58,9 @@ export class SerialController {
         logger.debug('Skipping serial connection; in virtual mode');
       }
 
-      logger.debug(`Attempting to connect to ebb device at path: ${targetPath}`);
+      logger.debug(
+        `Attempting to connect to ebb device at path: ${targetPath}`,
+      );
 
       // create serial port
       this.port = new SerialPort(
@@ -119,7 +121,9 @@ export class SerialController {
     try {
       const message = chunk.toString().trim();
       if (message !== EBB_SERIAL_INFO.ack) {
-        logger.debug(`Non-ack message received from the ebb device: ${message}`);
+        logger.debug(
+          `Non-ack message received from the ebb device: ${message}`,
+        );
       }
     } catch (e) {
       logger.debug('Failed to parse message from the ebb device');

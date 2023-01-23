@@ -50,7 +50,7 @@ export type PlotterOptions = {
     /** Time to wait in milliseconds after initialization before beginning an operation */
     initDuration: number;
     /** If true, disable stepper motors after an operation finishes */
-    disableMotorsOnComplete: boolean;
+    disableMotorsOnFinish: boolean;
     /** Stepper-related options */
     stepper: {
       /** Micro-stepping mode
@@ -113,4 +113,3 @@ export type PlotterOptions = {
     // }
   };
 };
-
