@@ -10,23 +10,6 @@ export type Operation = { command: string; duration?: number };
 // default attribute prefix for fast-xml-parser is "@_"
 export type PolyShape = { '@_points': string };
 
-export type PlotterEvent =
-  | 'operationstart'
-  | 'operationfinish'
-  | 'operationerror';
-
-export type RunnerOutMessageType = 'start' | 'finish';
-export type RunnerInMessageType = 'operations';
-
-export type RunnerOutMessage = {
-  type: RunnerOutMessageType;
-};
-
-export type RunnerInMessage = {
-  type: RunnerInMessageType;
-  data?: any;
-};
-
 export type PlotOptions = {
   layerId?: string;
 };
@@ -46,7 +29,7 @@ export type PlotterOptions = {
   isDebug: boolean;
   /** Bot-related options */
   bot: {
-    /** The target serial path to connect to.  If none is given, an attempt will be made to locate the ebb board automatically. */
+    /** The target serial path to connect to.  If none is given, an attempt will be made to locate the ebb automatically. */
     path: string;
     /** Acceleration options */
     // acceleration: {
@@ -131,4 +114,3 @@ export type PlotterOptions = {
   };
 };
 
-export type EBBPlotterOptions = RecursivePartial<PlotterOptions>;

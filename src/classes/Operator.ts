@@ -1,7 +1,8 @@
 import { flatten } from 'lodash';
+import logger from 'loglevel';
 
 import { Operation, PlotterOptions, Layer } from '../types';
-import { debugLog, distanceTo, percentBetween } from '../utils';
+import { distanceTo, percentBetween } from '../utils';
 
 // map of the micro step modes to the micro step values
 const MicroSteps = {
@@ -45,14 +46,11 @@ export class Operator {
   }
   public getPlotOperations = (layers: Layer[]) => {
     const {
-      isDebug,
       bot: { servo },
     } = this.options;
 
     // debug logging
-    if (isDebug) {
-      debugLog(`Steps per mm: ${this.stepsPerMM}`);
-    }
+    logger.debug(`Steps per mm: ${this.stepsPerMM}`);
 
     // the initial operations
     const operations: Operation[] = [];
@@ -86,9 +84,7 @@ export class Operator {
     });
 
     // debug logging
-    if (isDebug) {
-      debugLog(`Total plot operations: ${operations.length}`);
-    }
+    logger.debug(`Total plot operations: ${operations.length}`);
 
     return flatten([
       this.getStartOperations(),
@@ -98,16 +94,13 @@ export class Operator {
   };
   public getTestOperations = () => {
     const {
-      isDebug,
       bot: { servo },
     } = this.options;
 
     // debug logging
-    if (isDebug) {
-      debugLog(`Steps per mm: ${this.stepsPerMM}`);
-      debugLog(`Servo rate: ${servo.rate}`);
-      debugLog(`Servo duration: ${servo.duration}`);
-    }
+    logger.debug(`Steps per mm: ${this.stepsPerMM}`);
+    logger.debug(`Servo rate: ${servo.rate}`);
+    logger.debug(`Servo duration: ${servo.duration}`);
 
     const operations: Operation[] = [
       this.getMoveOperation(50, 50, this.penUpSpeed),
