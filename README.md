@@ -1,6 +1,6 @@
 # EBBPlotter
 
-An easy way to plot SVGs in Node.js for plotters using the [EBB](http://www.schmalzhaus.com/EBB/).
+An easy way to plot SVGs processed with [vpype](https://github.com/abey79/vpype) for plotters using the [EBB](http://www.schmalzhaus.com/EBB/).  This library only supports the `<polygon>` and `<polyline>` SVG elements (the output format of vpype).
 
 ## Installation
 
