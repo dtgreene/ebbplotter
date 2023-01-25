@@ -89,6 +89,14 @@ try {
 | down | `30` | The position of the servo when the pen is down as a percentage of the servo's min and max. | `number` |
 | up | `70` | The position of the servo when the pen is up as a percentage of the servo's min and max. | `number` |
 
+## Proposed API
+
+Some ideas for future features that should be fairly easy to implement:
+
+- Board voltage checking
+- Preview
+- Direct commands such as penUp(), penDown(), and moveTo(x, y)
+
 ## License
 
 [ISC](https://choosealicense.com/licenses/isc/)
