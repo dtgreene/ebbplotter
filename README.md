@@ -93,9 +93,9 @@ try {
 
 Some ideas for future features that should be fairly easy to implement:
 
-- Board voltage checking
-- Preview
-- Direct commands such as penUp(), penDown(), and moveTo(x, y)
+- Voltage checking before plotting.
+- A preview method that will return an SVG showing pen up and pen down movements.
+- Direct commands such as `penUp()`, `penDown()`, and `moveTo(x, y)`.
 
 ## License
 
