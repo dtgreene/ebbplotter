@@ -89,7 +89,7 @@ try {
 | down | `30` | The position of the servo when the pen is down as a percentage of the servo's min and max. | `number` |
 | up | `70` | The position of the servo when the pen is up as a percentage of the servo's min and max. | `number` |
 
-## Proposed API
+## Future Changes
 
 Some ideas for future features that should be fairly easy to implement:
 
