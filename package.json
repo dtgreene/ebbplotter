@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "rimraf dist && tsc --noemit && tsup",
-    "test": "node src/tests/plot.js",
+    "test": "npm run build && node tests/plot.js",
     "publish-package": "npm run build && changeset version && changeset publish",
     "format": "npx prettier --write src"
   },
@@ -27,7 +27,6 @@
   "license": "ISC",
   "devDependencies": {
     "@changesets/cli": "^2.26.0",
-    "@types/lodash.flatten": "^4.4.7",
     "@types/lodash.merge": "^4.6.7",
     "@types/minimist": "^1.2.2",
     "@types/node": "^18.11.18",
@@ -38,7 +37,6 @@
   },
   "dependencies": {
     "fast-xml-parser": "^4.0.13",
-    "lodash.flatten": "^4.4.0",
     "lodash.merge": "^4.6.2",
     "loglevel": "^1.8.1",
     "minimist": "^1.2.7",
