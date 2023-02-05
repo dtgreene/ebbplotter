@@ -53,9 +53,8 @@ try {
 ## Machine Options
 | Name | Default | Description | Type |
 | ---- | ---- | ----- | ----- |
-| path | (empty string) | The serial path to use when conncting to the ebb device. If blank, the program will attempt to find the device automatically. | `boolean` | 
+| path | (empty string) | The serial path to use when conncting to an EBB. If blank, the program will attempt to find the device automatically. | `boolean` | 
 | initDuration | `1000` | How long to wait in ms between performing setup and actually plotting. | `number` |
-| disableMotorsOnFinish | `true` | Indicates if the plotter should disable the motors after completing a plot. | `boolean` |
 | stepper | See stepper options | Options related to the stepper motor. | |
 | servo | See servo options | Options related to the servo motor. | |
 | limits.x | `300` | The X travel limit in mm. | `number` |

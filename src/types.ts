@@ -14,6 +14,11 @@ export type PlotOptions = {
   layerId?: string;
 };
 
+export enum PenState {
+  DOWN,
+  UP,
+}
+
 export type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
 };
@@ -29,7 +34,7 @@ export type PlotterOptions = {
   isDebug: boolean;
   /** Machine-related options */
   machine: {
-    /** The target serial path to connect to.  If none is given, an attempt will be made to locate the ebb automatically. */
+    /** The target serial path to connect to.  If none is given, an attempt will be made to locate an EBB automatically. */
     path: string;
     /** Acceleration options */
     // acceleration: {
@@ -48,9 +53,8 @@ export type PlotterOptions = {
     /** The minimum amount of time in milliseconds that must pass before sending another command */
     // minTravelTime: number;
     /** Time to wait in milliseconds after initialization before beginning an operation */
-    initDuration: number;
-    /** If true, disable stepper motors after an operation finishes */
-    disableMotorsOnFinish: boolean;
+    // initDuration: number;
+
     /** Stepper-related options */
     stepper: {
       /** Micro-stepping mode

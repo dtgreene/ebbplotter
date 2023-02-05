@@ -1,9 +1,39 @@
 import { XMLParser } from 'fast-xml-parser';
+import logger from 'loglevel';
 
-import { Layer, PolyShape, Path } from '../types';
-import { remap } from '../utils';
+import { Layer, PolyShape, Path, PlotterOptions } from '../types';
 
 export class SVGParser {
+  public static getPlotLayers = (svg: string, layerId?: string) => {
+    const { layers, dimensions } = SVGParser.parse(svg);
+
+    // check that there are layers
+    if (layers.length === 0) {
+      throw new Error('No layers found');
+    }
+
+    // the layers to plot
+    let plotLayers: Layer[] = [];
+
+    if (layerId) {
+      // if a layer id is given, try to find that layer
+      const foundLayer = layers.find((layer) => layer.id === layerId);
+      if (foundLayer) {
+        plotLayers = [foundLayer];
+      } else {
+        throw new Error(
+          `Could not find specified layer id: ${layerId}; Found layers: ${layers
+            .map(({ id }) => id)
+            .join(', ')}`,
+        );
+      }
+    } else {
+      // otherwise, just use all layers found
+      plotLayers = layers;
+    }
+
+    return { plotLayers, dimensions };
+  };
   public static parse = (svg: string) => {
     const parser = new XMLParser({ ignoreAttributes: false });
     const {
@@ -78,6 +108,12 @@ export class SVGParser {
       // add this layer
       layers.push(layer);
     });
+
+    // debug log
+    logger.debug(`SVG layer count: ${layers.length}`);
+    logger.debug(
+      `SVG dimensions: ${dimensions.width}mm x ${dimensions.height}mm`,
+    );
 
     return {
       layers,

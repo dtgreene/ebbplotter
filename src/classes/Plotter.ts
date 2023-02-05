@@ -1,15 +1,16 @@
-import merge from 'lodash.merge'
+import merge from 'lodash.merge';
 import logger from 'loglevel';
 
-import {
-  PlotterOptions,
-  PlotOptions,
-  Layer,
-  Operation,
-  RecursivePartial,
-} from '../types';
+import { PlotterOptions, PlotOptions, RecursivePartial } from '../types';
 import { SVGParser } from './SVGParser';
 import { Operator } from './Operator';
+import {
+  getStepsPerMM,
+  percentBetween,
+  distanceTo,
+  pointInBounds,
+} from '../utils';
+import { maxStepsPS } from '../constants';
 import { SerialController } from './SerialController';
 
 const defaultOptions = {
@@ -17,8 +18,6 @@ const defaultOptions = {
   isDebug: false,
   machine: {
     path: '',
-    initDuration: 1000,
-    disableMotorsOnFinish: true,
     stepper: {
       stepMode: 2 as const,
       stepAngle: 1.8,
@@ -48,103 +47,189 @@ const defaultOptions = {
 };
 
 export default class Plotter {
-  private inProgress = false;
-  private operations: Operation[] = [];
   private options: PlotterOptions = defaultOptions;
   private serial: SerialController;
+  private operator: Operator;
+  private inProgress = false;
+  private units = {
+    stepsPerMM: 0,
+  };
+  private speeds = {
+    penUp: 0,
+    penDown: 0,
+  };
+  private position = {
+    x: 0,
+    y: 0,
+  };
   constructor(options?: Partial<RecursivePartial<PlotterOptions>>) {
     this.options = merge(this.options, options);
     this.serial = new SerialController(this.options.machine.path, {
       isVirtual: this.options.isVirtual,
+      onClose: this.onPortClose,
     });
+    this.operator = new Operator(this.serial, this.options);
+    // pre-calculate some values for use later
+    const { stepper } = this.options.machine;
+
+    // steps per mm
+    this.units = {
+      stepsPerMM: getStepsPerMM(stepper),
+    };
+
+    // pen up speed in steps per second
+    this.speeds = {
+      penUp: percentBetween(
+        stepper.speed.min,
+        stepper.speed.max,
+        stepper.speed.up,
+      ),
+      penDown: percentBetween(
+        stepper.speed.min,
+        stepper.speed.max,
+        stepper.speed.down,
+      ),
+    };
 
     if (this.options.isDebug) {
       logger.setDefaultLevel('debug');
     }
   }
-  public plot = (svg: string, plotOptions: Partial<PlotOptions> = {}) => {
-    // parse incoming svg
-    const { layers, dimensions } = SVGParser.parse(svg);
-
-    // log debug messages
-    logger.debug(`Layer count: ${layers.length}`);
-    logger.debug(`SVG dimensions: ${dimensions.width}x${dimensions.height}`);
-    layers.forEach((layer, index) => {
-      logger.debug(`Layer ${index} path count: ${layer.paths.length}`);
-    });
+  public plot = async (svg: string, plotOptions: Partial<PlotOptions> = {}) => {
+    // get plot layers
+    const { plotLayers, dimensions } = SVGParser.getPlotLayers(
+      svg,
+      plotOptions.layerId,
+    );
 
     // check travel limits
-    const {
-      machine: { stepper, limits },
-    } = this.options;
-
-    if (!stepper.swapAxes) {
-      if (dimensions.width > limits.x || dimensions.height > limits.y) {
-        throw new Error('SVG exceeds travel limits');
-      }
-    } else {
-      if (dimensions.width > limits.y || dimensions.height > limits.x) {
-        throw new Error('SVG exceeds travel limits');
-      }
+    const { machine } = this.options;
+    if (!pointInBounds(dimensions.width, dimensions.height, machine)) {
+      throw new Error('SVG dimensions exceed travel limits');
     }
 
-    // determine plot layers
-    const { layerId } = plotOptions;
-    // the layers to plot
-    let plotLayers: Layer[] = [];
-
-    if (layerId) {
-      // if a layer id is given, try to find that layer
-      const foundLayer = layers.find((layer) => layer.id === layerId);
-      if (foundLayer) {
-        plotLayers = [foundLayer];
-      } else {
-        throw new Error(
-          `Could not find specified layer id: ${layerId}; Available layers: ${layers
-            .map(({ id }) => id)
-            .join(', ')}`,
-        );
-      }
-    } else {
-      // otherwise, just use all layers found
-      plotLayers = layers;
-    }
-
-    // verify there are layers to plot
-    if (plotLayers.length === 0) {
-      throw new Error('No layers to plot');
-    }
-
-    const operator = new Operator(this.options);
-    this.operations = operator.getPlotOperations(plotLayers);
-
-    return this.startOperations();
-  };
-  private startOperations = async () => {
-    // verify not already in progress
-    if (this.inProgress) {
-      throw new Error('Operation already in progress');
-    }
-
-    // indicate in progress
+    // open connection
+    await this.open();
+    // set progress
     this.inProgress = true;
 
-    try {
-      await this.serial.connect();
-    } catch (e) {
-      throw new Error(`Serial controller failed to connect: ${e}`);
+    // check motor voltage
+    if (!this.options.isVirtual) {
+      const motorVoltage = await this.operator.getMotorVoltage();
+      // should be 300 when plugged in but there could be some variance
+      if (motorVoltage < 250) {
+        throw new Error(
+          `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`,
+        );
+      }
     }
 
-    for (let i = 0; i < this.operations.length; i++) {
-      const { command, duration = 0 } = this.operations[i];
+    // get ready for plotting
+    await this.operator.enableMotors();
+    await this.operator.setupServo();
+    await this.operator.penUp();
 
-      try {
-        await this.serial.write(command);
-      } catch (e) {
-        logger.error(`Serial controller failed to write: ${e}`);
+    // all layers and paths will be converted and flattened into a single array of operations
+    for (let i = 0; i < plotLayers.length; i++) {
+      const { paths } = plotLayers[i];
+      for (let j = 0; j < paths.length; j++) {
+        const path = paths[j];
+        for (let k = 0; k < path.length; k += 2) {
+          const x = path[k];
+          const y = path[k + 1];
+
+          if (k === 0) {
+            // the pen should be up when moving to the first point
+            await this.moveTo(x, y, this.speeds.penUp);
+            // lower the pen after reaching the first point
+            await this.operator.penDown();
+          } else {
+            // otherwise, move at down speed
+            await this.moveTo(x, y, this.speeds.penDown);
+          }
+        }
+        // return to the first point
+        await this.moveTo(path[0], path[1], this.speeds.penDown);
+        // after completing the path, the pen needs to be raised
+        await this.operator.penUp();
       }
+    }
 
-      await new Promise((res) => setTimeout(res, duration));
+    // return to home when done
+    await this.moveTo(0, 0, this.speeds.penUp);
+    // disable motors
+    await this.operator.disableMotors();
+
+    // set progress
+    this.inProgress = false;
+  };
+  public moveTo = async (x: number, y: number, stepsPS: number) => {
+    const { machine } = this.options;
+
+    // check that the requested position is within the travel limits
+    if (!pointInBounds(x, y, machine)) {
+      throw new Error('Movement exceeds travel limits');
+    }
+
+    // verify the maximum steps per second isn't being exceeded
+    if (stepsPS > maxStepsPS) {
+      throw new Error(
+        'Max steps per second exceeded.  Should not be greater than 25,000',
+      );
+    }
+
+    const x1 = x;
+    const y1 = y;
+    const x2 = this.position.x;
+    const y2 = this.position.y;
+
+    // calculate steps to take in each direction
+    const deltaX = x1 - x2;
+    const deltaY = y1 - y2;
+    const stepsX = Math.round(deltaX * this.units.stepsPerMM);
+    const stepsY = Math.round(deltaY * this.units.stepsPerMM);
+
+    // calculate duration to travel between points
+    const distance = distanceTo(x1, y1, x2, y2);
+    const stepDistance = distance * this.units.stepsPerMM;
+    const duration = Math.round((stepDistance / stepsPS) * 1000);
+
+    if (!machine.stepper.swapAxes) {
+      await this.operator.stepMotors(stepsX, stepsY, duration);
+    } else {
+      await this.operator.stepMotors(stepsY, stepsX, duration);
+    }
+
+    // update position
+    this.position.x = x;
+    this.position.y = y;
+  };
+  public isConnected = () => {
+    return this.serial.isConnected;
+  };
+  public close = async () => {
+    // check if in progress
+    if (this.inProgress) {
+      this.inProgress = false;
+      logger.error('Closing connection while in progress');
+    }
+
+    try {
+      await this.serial.close();
+    } catch (e) {
+      throw new Error(`Could not close serial connection: ${e}`);
+    }
+  };
+  public open = async () => {
+    try {
+      await this.serial.open();
+    } catch (e) {
+      throw new Error(`Could not open serial connection: ${e}`);
+    }
+  };
+  private onPortClose = () => {
+    if (this.inProgress) {
+      throw new Error('Lost serial connection');
     }
   };
 }
