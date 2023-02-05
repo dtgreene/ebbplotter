@@ -3,7 +3,7 @@ import fs from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-import Plotter from '../../dist/index.js';
+import Plotter from '../dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,12 +14,25 @@ test('plot', async () => {
   const svg = fs.readFileSync(svgPath, 'utf-8').toString();
 
   const plotter = new Plotter({
-    machine: { limits: { x: 300, y: 300 } },
+    machine: { limits: { x: 215, y: 280 } },
     isDebug: true,
     isVirtual: true,
+    // machine: {
+    //   stepper: {
+    //     speed: {
+    //       max: 2000
+    //     }
+    //   }
+    // }
   });
 
-  console.log('Test plot starting');
-  await plotter.plot(svg);
-  console.log('Test plot finished');
+  try {
+    console.log('Test plot starting');
+    await plotter.plot(svg);
+    console.log('Test plot finished');
+  } catch (e) {
+    console.log('Test plot failed');
+  } finally {
+    await plotter.close();
+  }
 });

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="30.0cm" version="1.2" viewBox="0 0 1133.8582677165355 1133.8582677165355" width="30.0cm">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="tiny" height="28.0cm" version="1.2" viewBox="0 0 812.5984251968505 1058.2677165354332" width="21.5cm">
   <metadata>
     <rdf:RDF>
       <cc:Work>
         <dc:format>image/svg+xml</dc:format>
-        <dc:source>vpype read smiley.svg linesimplify --tolerance 0.1mm linemerge --tolerance 0.1mm linesort pagesize 300mmx300mm write smiley_processed.svg
+        <dc:source>vpype read smiley.svg linesimplify --tolerance 0.1mm linemerge --tolerance 0.1mm linesort pagesize 280mmx215mm write smiley_processed.svg
 </dc:source>
-        <dc:date>2023-01-22T12:26:16.513686</dc:date>
+        <dc:date>2023-01-27T13:38:17.864400</dc:date>
       </cc:Work>
     </rdf:RDF>
   </metadata>

@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "rimraf dist && tsc --noemit && tsup",
-    "test": "node src/tests/plot.js",
+    "test": "npm run build && node tests/plot.js",
     "publish-package": "npm run build && changeset version && changeset publish",
     "format": "npx prettier --write src"
   },
