@@ -17,13 +17,6 @@ test('plot', async () => {
     machine: { limits: { x: 215, y: 280 } },
     isDebug: true,
     isVirtual: true,
-    // machine: {
-    //   stepper: {
-    //     speed: {
-    //       max: 2000
-    //     }
-    //   }
-    // }
   });
 
   try {

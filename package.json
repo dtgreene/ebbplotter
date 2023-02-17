@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "rimraf dist && tsc --noemit && tsup",
-    "test": "npm run build && node tests/plot.js",
+    "test-plot": "npm run build && node tests/plot.js",
+    "test": "jest",
     "publish-package": "npm run build && changeset version && changeset publish",
     "format": "npx prettier --write src"
   },
@@ -27,20 +28,25 @@
   "license": "ISC",
   "devDependencies": {
     "@changesets/cli": "^2.26.0",
+    "@types/jest": "^29.4.0",
     "@types/lodash.merge": "^4.6.7",
-    "@types/minimist": "^1.2.2",
     "@types/node": "^18.11.18",
+    "canvas": "^2.11.0",
     "prettier": "2.8.3",
     "rimraf": "^4.1.1",
+    "ts-jest": "^29.0.5",
     "tsup": "^6.5.0",
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "adaptive-bezier-curve": "^1.0.3",
     "fast-xml-parser": "^4.0.13",
     "lodash.merge": "^4.6.2",
     "loglevel": "^1.8.1",
-    "minimist": "^1.2.7",
-    "serialport": "^10.5.0"
+    "rbush": "^3.0.1",
+    "serialport": "^10.5.0",
+    "svgdom": "^0.1.13",
+    "tinyqueue": "^2.0.3"
   },
   "engines": {
     "node": ">=18"
