@@ -1,30 +1,35 @@
 # EBBPlotter
 
+A script for plotting SVG images using [EiBotBoard](http://www.schmalzhaus.com/EBB/) powered machines.
+
 ## Usage
 
-Basic usage to plot an SVG: 
+To plot, simply place the SVG file in `src/assets` and run `npm run plot`.  The script will prompt for the file name as well as the width of the final image in millimeters.  
 
-```javascript
+## Usage notes
+- SVG width and height properties are required and should contain only numbers (no units included).  These values are always treated as millimeters which may be different from other plotting programs.
+- There currently is no acceleration/jerk control.  Plotting is simply executed as constant speed, point-to-point movements.  Care should be taken when adjusting the speed settings to preserve accuracy and prevent possible damage to the machine.
+- There currently is no support for CoreXY machines such as the AxiDraw.  This should be pretty trivial to add but I have not looked into it since this was made to control a DIY machine. 
 
-```
+## Options
 
-## Plotter Options
+Most of the options you may want to change are defined as `PLOT_OPTIONS` in [constants.js](src/constants.js#L16).  
+Here's a breakdown of what each option does:
 
 | Name | Default | Description | Type |
 | ---- | ---- | ---- | ---- |
-| isVirtual | `false` | Indicates if the plotter should run in virtual mode. In virtual mode, no serial connection is made and serial writes are simulated. | `boolean` |
+| isVirtual | `false` | Indicates if the plotter should run in virtual mode. In virtual mode, no serial connection is made and plotting is simulated. | `boolean` |
 | isDebug | `false` | Indicates if debug logging should be enabled. | `boolean` |
-| machine | See machine options | Options related to the plotter. | |
+| machine | See machine options | Options related to the plotter. | `MachineOptions` |
 
 ## Machine Options
 | Name | Default | Description | Type |
 | ---- | ---- | ----- | ----- |
-| path | (empty string) | The serial path to use when conncting to an EBB. If blank, the program will attempt to find the device automatically. | `boolean` | 
-| initDuration | `1000` | How long to wait in ms between performing setup and actually plotting. | `number` |
-| stepper | See stepper options | Options related to the stepper motor. | |
-| servo | See servo options | Options related to the servo motor. | |
-| limits.x | `300` | The X travel limit in mm. | `number` |
-| limits.y | `218` | The Y travel limit in mm. | `number` |
+| path | (empty string) | The serial path to use when conncting to an EBB. If blank, the program will attempt to find the device automatically by looking at all connected serial devices. | `string` | 
+| stepper | See stepper options | Options related to the stepper motor. | `StepperOptions` |
+| servo | See servo options | Options related to the servo motor. | `ServoOptions` |
+| limits.x | `300` | The X travel limit in millimeters. | `number` |
+| limits.y | `218` | The Y travel limit in millimeters. | `number` |
 
 ## Stepper Options
 | Name | Default | Description | Type |
@@ -33,16 +38,15 @@ Basic usage to plot an SVG:
 | stepAngle | `1.8` | The step angle used by the stepper motors in degrees. | `number` |
 | beltPitch | `2` | The pitch of the timing belts on the machine in millimeters. The common GT2 belts use a 2mm pitch. | `number` |
 | toothCount | `20` | The number of teeth on the stepper motor timing pulleys. | `number` |
-| swapAxes | `false` | Indicates if the X and Y axes should be swapped. | `boolean` |
-| speed | See stepper speed options | Options related to the stepper motor speed. | |
+| speed | See stepper speed options | Options related to the stepper motor speed. | `StepperSpeedOptions` |
 
 ## Stepper Speed Options
 | Name | Default | Description | Type |
 | ---- | ---- | ----- | ----- |
 | min | `200` | The lower range in steps per second the motors are allowed to move at. | `number` |
 | max | `5000` | The upper range in steps per second the motors are allowed to move at.  Note that the EBB can drive at a maximum of 25,000 steps per second. | `number` |
-| down | `80` | The plot speed while the pen is down as a percentage between the stepper's min and max speed. | `number` |
 | up | `60` | The plot speed while the pen is up as a percentage between the stepper's min and max speed. | `number` |
+| down | `80` | The plot speed while the pen is down as a percentage between the stepper's min and max speed. | `number` |
 
 ## Servo Options
 | Name | Default | Description | Type |
