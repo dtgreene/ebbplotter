@@ -1,0 +1,22 @@
+{
+  "name": "ebbplotter",
+  "version": "0.0.1",
+  "description": "A plotting script for EBB powered pen plotter machines",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "plot": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "Dylan Greene",
+  "license": "ISC",
+  "dependencies": {
+    "adaptive-bezier-curve": "^1.0.3",
+    "fast-xml-parser": "^4.2.2",
+    "loglevel": "^1.8.1",
+    "prompt": "^1.3.0",
+    "serialport": "^11.0.0",
+    "style-to-object": "^0.4.1",
+    "svgpath": "^2.6.0"
+  }
+}
