@@ -139,6 +139,10 @@ async function main() {
 
     // return to home when finished
     await moveTo(0, 0, speeds.penUp);
+    
+    // indicate plotting has finished
+    inProgress = false;
+
     // close serial connection
     await serial.close();
   } catch (error) {
