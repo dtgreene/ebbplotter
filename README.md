@@ -4,7 +4,7 @@
   <img src="https://github.com/dtgreene/ebbplotter/assets/24302976/16256342-f252-4e7a-ac87-e87c649266f8" width="400" />
 </p>
 <p align="center">
-  A plotting program for machines using the [EiBotBoard](http://www.schmalzhaus.com/EBB/)
+  A plotting program for machines using the <a href="http://www.schmalzhaus.com/EBB/">EiBotBoard</a>
 </p>
 
 ## Usage
