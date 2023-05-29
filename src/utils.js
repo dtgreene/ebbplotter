@@ -1,4 +1,6 @@
-import { MICRO_STEP_MODE, SEGMENT_OPTIONS } from './constants.js';
+import logger from 'loglevel';
+
+import { SEGMENT_OPTIONS, WORK_AREA_DIMENSIONS } from './constants.js';
 import { segment } from './lib/segment/segment.js';
 import { round } from './lib/optimize/round.js';
 import { simplify } from './lib/optimize/simplify.js';
@@ -27,24 +29,6 @@ export function distanceTo(x1, y1, x2, y2) {
  */
 export function remap(n, start1, stop1, start2, stop2) {
   return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
-}
-
-/**
- * Calculates the number of steps per millimeter based on the stepper configuration
- * @param {StepperConfig} stepper
- * @returns
- */
-export function getStepsPerMM(stepper) {
-  const { stepMode, stepAngle, beltPitch, toothCount } = stepper;
-
-  if (!(stepMode in MICRO_STEP_MODE)) {
-    throw new Error('Invalid step mode');
-  }
-
-  const micro = MICRO_STEP_MODE[stepMode];
-  const steps = ((360 / stepAngle) * micro) / (beltPitch * toothCount);
-
-  return Math.round(steps);
 }
 
 /**
@@ -126,6 +110,16 @@ export function segmentSVG(data, outWidth, selector) {
     width: outWidth,
     height: outWidth / ratio,
   };
+
+  // it's possible that scaling will exceed the work area
+  if (outDimensions.height > WORK_AREA_DIMENSIONS.height) {
+    outDimensions.height = WORK_AREA_DIMENSIONS.height;
+    outDimensions.width = outDimensions.height * ratio;
+
+    logger.warn(
+      'The dimensions have been scaled back to stay within the work area'
+    );
+  }
 
   // scale the segments to the out width
   segments = segments.reduce((acc, current) => {

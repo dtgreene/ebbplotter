@@ -7,27 +7,24 @@ import {
   BOARD_MANUFACTURER,
   BOARD_NAME,
   BOARD_PRODUCT_ID,
+  IS_VIRTUAL,
+  READ_WRITE_TIMEOUT,
 } from './constants.js';
-
-// How long to wait when reading/writing before throwing an error
-const readWriteTimeout = 5000;
 
 export class SerialController {
   path = '';
-  options = {};
+  callbacks = {};
   isConnected = false;
   port = undefined;
   writeCallback = undefined;
   isWaiting = false;
   writeResponse = '';
-  constructor(path, options) {
+  constructor(path, callbacks) {
     this.path = path;
-    this.options = options;
+    this.callbacks = callbacks;
   }
   open = () => {
     return new Promise(async (resolve, reject) => {
-      const { isVirtual } = this.options;
-
       // skip connection if already connected
       if (this.isConnected) {
         logger.debug('Skipping serial connection; already connected');
@@ -36,7 +33,7 @@ export class SerialController {
       }
 
       // skip connection in virtual mode
-      if (isVirtual) {
+      if (IS_VIRTUAL) {
         logger.debug('Skipping serial connection; in virtual mode');
         this.isConnected = true;
         resolve();
@@ -52,7 +49,9 @@ export class SerialController {
         if (autoPath) {
           targetPath = autoPath;
         } else {
-          reject('No serial path was given and no EBBs were found');
+          reject(
+            'No serial path was given and no valid devices could be found'
+          );
           return;
         }
       }
@@ -84,7 +83,7 @@ export class SerialController {
     });
   };
   close = () => {
-    if (!this.isConnected || this.options.isVirtual) return Promise.resolve();
+    if (!this.isConnected || IS_VIRTUAL) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
       this.port.flush(() => {
@@ -116,7 +115,7 @@ export class SerialController {
         // timeout before giving up on reading
         const readTimeout = setTimeout(() => {
           reject(`Serial read failed due to timeout: ${message}`);
-        }, readWriteTimeout);
+        }, READ_WRITE_TIMEOUT);
 
         // set waiting
         this.isWaiting = true;
@@ -136,8 +135,7 @@ export class SerialController {
         };
 
         // write virtually
-        const { isVirtual } = this.options;
-        if (isVirtual) {
+        if (IS_VIRTUAL) {
           logger.debug(`Writing serial message virtually: ${message}`);
           // simulate a response
           setTimeout(() => this.onSerialData(Buffer.from(RESPONSE_ACK)), 10);
@@ -147,7 +145,7 @@ export class SerialController {
         // timeout before giving up on writing
         const writeTimeout = setTimeout(() => {
           reject(`Serial write failed due to timeout: ${message}`);
-        }, readWriteTimeout);
+        }, READ_WRITE_TIMEOUT);
 
         // write data to the stream
         this.port.write(`${message}\r`, 'ascii');
@@ -236,6 +234,8 @@ export class SerialController {
     this.isWaiting = false;
     this.writeResponse = '';
 
-    this.options.onClose();
+    if (this.callbacks.onClose) {
+      this.callbacks.onClose();
+    }
   };
 }

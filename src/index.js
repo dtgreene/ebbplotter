@@ -1,10 +1,9 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import prompt from 'prompt';
 import logger from 'loglevel';
+import inquirer from 'inquirer';
 
 import {
-  getStepsPerMM,
   segmentSVG,
   percentBetween,
   pointInBounds,
@@ -13,146 +12,353 @@ import {
 import { SerialController } from './serial.js';
 import { Operator } from './operator.js';
 import {
+  LOG_LEVEL,
+  IS_VIRTUAL,
   MAX_STEPS_PER_SECOND,
-  PLOT_OPTIONS,
+  PEN_DIAMETER,
   PLOT_VOLTAGE,
+  SERIAL_PATH,
+  WORK_AREA_DIMENSIONS,
+  STEPS_PER_MM,
+  STEPPER_OPTIONS,
 } from './constants.js';
 
 let inProgress = false;
 let position = { x: 0, y: 0 };
 
-const promptSchema = {
-  properties: {
-    fileName: {
-      message: 'Enter the name of the file to plot',
-      required: true,
-    },
-    plotWidth: {
-      message: 'Enter the output width of the file in mm',
-      required: true,
-    },
-  },
-};
-
-const serial = new SerialController(PLOT_OPTIONS.machine.path, {
-  isVirtual: PLOT_OPTIONS.isVirtual,
+const serial = new SerialController(SERIAL_PATH, {
   onClose: onPortClose,
 });
-const operator = new Operator(serial, PLOT_OPTIONS);
-
-const { stepper } = PLOT_OPTIONS.machine;
-const stepsPerMM = getStepsPerMM(stepper);
+const operator = new Operator(serial);
 const speeds = {
-  penUp: percentBetween(stepper.speed.min, stepper.speed.max, stepper.speed.up),
+  penUp: percentBetween(
+    STEPPER_OPTIONS.speed.min,
+    STEPPER_OPTIONS.speed.max,
+    STEPPER_OPTIONS.speed.up
+  ),
   penDown: percentBetween(
-    stepper.speed.min,
-    stepper.speed.max,
-    stepper.speed.down
+    STEPPER_OPTIONS.speed.min,
+    STEPPER_OPTIONS.speed.max,
+    STEPPER_OPTIONS.speed.down
   ),
 };
 
+const plotQuestions = [
+  {
+    type: 'input',
+    name: 'fileName',
+    message: 'Enter the name of the file to plot (with extension)',
+    default: '',
+    validate: (value) => {
+      if (!value) {
+        return 'Please enter a value';
+      }
+
+      const filePath = resolve('src/assets', value);
+      if (!existsSync(filePath)) {
+        return `${filePath} does not exist`;
+      }
+
+      return true;
+    },
+  },
+  {
+    type: 'input',
+    name: 'plotWidth',
+    message: 'Enter the output width of the file in mm',
+    default: '',
+    validate: (value) => {
+      if (!value) {
+        return 'Please enter a value';
+      }
+
+      if (isNaN(Number(value))) {
+        return 'Please enter a valid number';
+      }
+
+      if (Number(value) > WORK_AREA_DIMENSIONS.width) {
+        return `Value exceeds work area. Please enter a value less than ${WORK_AREA_DIMENSIONS.width}`;
+      }
+
+      return true;
+    },
+  },
+];
+
 async function main() {
   try {
-    if (PLOT_OPTIONS.isDebug) {
-      // enable debug logging
-      logger.setDefaultLevel('debug');
+    if (LOG_LEVEL) {
+      logger.setDefaultLevel(LOG_LEVEL);
     }
 
-    // start the prompt service
-    prompt.start();
+    // start the prompt
+    const { task } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'task',
+        message: 'What would you like to do?',
+        choices: ['Plot', 'Cycle pen', 'Preview plot'],
+      },
+    ]);
 
-    // prompt the name of the file to plot
-    const { fileName, plotWidth } = await prompt.get(promptSchema);
-
-    // verify the file exists
-    const filePath = resolve('src/assets', fileName);
-    if (!existsSync(filePath)) {
-      exitWithError(`File does not exist: ${filePath}`);
-    }
-
-    // read the file
-    const fileContents = readFileSync(filePath, 'utf-8');
-    // segment the svg
-    const segments = segmentSVG(
-      fileContents,
-      plotWidth,
-      (path) => path.id === 'layer1'
-    );
-
-    // open serial port connection
-    try {
-      await serial.open();
-    } catch (error) {
-      exitWithError(`Could not open serial port: ${error}`);
-    }
-
-    // check motor voltage
-    if (!PLOT_OPTIONS.isVirtual) {
-      const motorVoltage = await operator.getMotorVoltage();
-
-      if (motorVoltage < PLOT_VOLTAGE) {
-        exitWithError(
-          `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`
-        );
+    switch (task) {
+      case 'Plot': {
+        await plot();
+        break;
       }
-    }
+      case 'Cycle pen': {
+        // start the session
+        await startSession();
 
-    // indicate plotting has begun
-    inProgress = true;
+        let direction = await promptDirection();
 
-    await operator.enableMotors();
-    await operator.setupServo();
-    await operator.penUp();
+        // continuously prompt the user for the direction
+        while (direction !== 'None') {
+          if (direction === 'Up') {
+            await operator.penUp();
+          } else {
+            await operator.penDown();
+          }
 
-    for (let i = 0; i < segments.length; i++) {
-      logger.debug(`Starting path ${i}/${segments.length}`);
-
-      // move to the first position
-      await moveTo(segments[i][0], segments[i][1], speeds.penUp);
-
-      // pen down
-      await operator.penDown();
-
-      // start at the second position
-      for (let j = 2; j < segments[i].length; j += 2) {
-        const x = segments[i][j];
-        const y = segments[i][j + 1];
-
-        await moveTo(x, y, speeds.penDown);
-      }
-
-      // if there is another segment to plot
-      if (segments[i + 1]) {
-        const xDiff = Math.abs(segments[i + 1][0] - position.x);
-        const yDiff = Math.abs(segments[i + 1][1] - position.y);
-
-        // only pen up if the start of the next segment is some distance away
-        if (xDiff > 0.01 || yDiff > 0.01) {
-          await operator.penUp();
-        } else {
-          logger.debug('Skipping pen up');
+          direction = await promptDirection();
         }
-      } else {
-        await operator.penUp();
+
+        // end the session
+        await endSession();
+        break;
+      }
+      case 'Preview plot': {
+        let createCanvas = null;
+
+        try {
+          const canvas = await import('canvas');
+          createCanvas = canvas.createCanvas;
+        } catch (error) {
+          exitWithError(
+            `Could not import the canvas dependency: ${error}`,
+            'For OS-specific installation instructions see https://www.npmjs.com/package/canvas'
+          );
+        }
+
+        const { fileName, plotWidth } = await inquirer.prompt(plotQuestions);
+        const segments = getSegments(fileName, Number(plotWidth));
+
+        await createPlotPreview(createCanvas, segments);
+        break;
+      }
+      default: {
+        exitWithError('Unknown choice');
       }
     }
-
-    // return to home when finished
-    await moveTo(0, 0, speeds.penUp);
-    
-    // indicate plotting has finished
-    inProgress = false;
 
     // close serial connection
     await serial.close();
   } catch (error) {
-    exitWithError(`Plotting failed: ${error}`);
+    exitWithError(`Operation failed: ${error}`);
+  }
+}
+
+async function createPlotPreview(createCanvas, segments) {
+  const { outputFileName } = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'outputFileName',
+      message: 'Enter the name of the file to output (with extension)',
+      default: 'output.png',
+      validate: (value) => {
+        if (!value) {
+          return 'Please enter a value';
+        }
+
+        return true;
+      },
+    },
+  ]);
+
+  const dimensionPadding = 48;
+  const scale = 4;
+
+  const { width, height } = WORK_AREA_DIMENSIONS;
+
+  // scale the dimensions for a higher resolution
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+
+  const canvas = createCanvas(
+    scaledWidth + dimensionPadding,
+    scaledHeight + dimensionPadding
+  );
+  const ctx = canvas.getContext('2d');
+
+  // draw the dimensions outline
+  ctx.strokeStyle = 'red';
+  ctx.fillStyle = 'red';
+  ctx.strokeRect(0, 0, scaledWidth, scaledHeight);
+
+  // draw dimensions text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '32px Sans';
+
+  ctx.fillText(
+    `${width}mm`,
+    scaledWidth * 0.5,
+    scaledHeight + dimensionPadding * 0.5
+  );
+
+  ctx.save();
+  ctx.translate(scaledWidth + dimensionPadding * 0.5, scaledHeight * 0.5);
+  ctx.rotate(Math.PI * 0.5);
+  ctx.fillText(`${height}mm`, 0, 0);
+  ctx.restore();
+
+  // draw line segments
+  ctx.strokeStyle = 'blue';
+  for (let i = 0; i < segments.length; i++) {
+    // move to the first position
+    ctx.beginPath(segments[i][0] * scale, segments[i][1] * scale);
+
+    // start at the second position
+    for (let j = 2; j < segments[i].length; j += 2) {
+      const x = segments[i][j] * scale;
+      const y = segments[i][j + 1] * scale;
+
+      ctx.lineTo(x, y);
+    }
+
+    ctx.stroke();
+  }
+
+  // create the directory if non-existant
+  if (!existsSync('src/output')) {
+    mkdirSync('src/output');
+  }
+
+  const buffer = canvas.toBuffer();
+  const outputPath = resolve('src/output', outputFileName);
+
+  writeFileSync(outputPath, buffer);
+}
+
+async function promptDirection() {
+  const answer = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'direction',
+      message: 'How would you like to cycle the pen?',
+      choices: ['Up', 'Down', 'None'],
+    },
+  ]);
+
+  return answer.direction;
+}
+
+async function plot() {
+  const { fileName, plotWidth } = await inquirer.prompt(plotQuestions);
+  const segments = getSegments(fileName, Number(plotWidth));
+
+  // start the session
+  await startSession();
+
+  // check motor voltage
+  if (!IS_VIRTUAL) {
+    const motorVoltage = await operator.getMotorVoltage();
+
+    if (motorVoltage < PLOT_VOLTAGE) {
+      exitWithError(
+        `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`
+      );
+    }
+  }
+
+  for (let i = 0; i < segments.length; i++) {
+    logger.debug(`Starting path ${i}/${segments.length}`);
+
+    // move to the first position
+    await moveTo(segments[i][0], segments[i][1], speeds.penUp);
+
+    // pen down
+    await operator.penDown();
+
+    // start at the second position
+    for (let j = 2; j < segments[i].length; j += 2) {
+      const x = segments[i][j];
+      const y = segments[i][j + 1];
+
+      await moveTo(x, y, speeds.penDown);
+    }
+
+    // if there is another segment to plot
+    if (segments[i + 1]) {
+      const xDiff = Math.abs(segments[i + 1][0] - position.x);
+      const yDiff = Math.abs(segments[i + 1][1] - position.y);
+
+      // only pen up if the start of the next segment is some distance away
+      if (xDiff > PEN_DIAMETER || yDiff > PEN_DIAMETER) {
+        await operator.penUp();
+      } else {
+        logger.debug('Skipping pen up');
+      }
+    } else {
+      await operator.penUp();
+    }
+  }
+
+  // pen up
+  await operator.penUp();
+  // return to home when finished
+  await moveTo(0, 0, speeds.penUp);
+  // end the session
+  await endSession();
+}
+
+function getSegments(fileName, plotWidth) {
+  // verify the file exists
+  const filePath = resolve('src/assets', fileName);
+  if (!existsSync(filePath)) {
+    exitWithError(`File does not exist: ${filePath}`);
+  }
+
+  // read the file
+  const fileContents = readFileSync(filePath, 'utf-8');
+  // segment the svg
+  const segments = segmentSVG(fileContents, plotWidth);
+  // The third argument is where you would use something like
+  // src/constants.js/PATH_SELECTOR to select a path or paths
+  // based on stroke, fill, or id.
+
+  if (segments.length === 0) {
+    exitWithError(
+      'There are no segments to plot! Please check the SVG and your selector if one was provided.'
+    );
+  }
+
+  return segments;
+}
+
+async function startSession() {
+  try {
+    // indicate progress
+    inProgress = true;
+    await serial.open();
+  } catch (error) {
+    exitWithError(`Could not open serial port: ${error}`);
+  }
+}
+
+async function endSession() {
+  try {
+    // indicate progress
+    inProgress = false;
+    await serial.close();
+  } catch (error) {
+    exitWithError(`Could not close serial port: ${error}`);
   }
 }
 
 async function moveTo(x, y, stepsPS) {
   // check that the requested position is within the travel limits
-  if (!pointInBounds(x, y, PLOT_OPTIONS.machine.dimensions)) {
+  if (!pointInBounds(x, y, WORK_AREA_DIMENSIONS)) {
     exitWithError('Attempted to move outside of travel limits');
   }
 
@@ -171,12 +377,12 @@ async function moveTo(x, y, stepsPS) {
   // calculate steps to take in each direction
   const deltaX = x1 - x2;
   const deltaY = y1 - y2;
-  const stepsX = Math.round(deltaX * stepsPerMM);
-  const stepsY = Math.round(deltaY * stepsPerMM);
+  const stepsX = Math.round(deltaX * STEPS_PER_MM);
+  const stepsY = Math.round(deltaY * STEPS_PER_MM);
 
   // calculate duration to travel between points
   const distance = distanceTo(x1, y1, x2, y2);
-  const stepDistance = distance * stepsPerMM;
+  const stepDistance = distance * STEPS_PER_MM;
   const duration = Math.round((stepDistance / stepsPS) * 1000);
 
   // only step for durations over 0, otherwise the board will return an error
@@ -189,8 +395,8 @@ async function moveTo(x, y, stepsPS) {
   position.y = y;
 }
 
-function exitWithError(message) {
-  logger.error(message);
+function exitWithError(...message) {
+  logger.error(...message);
   process.exit(1);
 }
 
