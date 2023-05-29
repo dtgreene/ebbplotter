@@ -12,7 +12,9 @@ Most of the options are configured for my DIY machine so you may need to tweak s
 
 From there, the easiest way to plot is to place your SVG file in the `src/assets` directory and run `npm start`.  The prompt will offer a few operations to choose from.
 
-![image](https://github.com/dtgreene/ebbplotter/assets/24302976/0709451a-f001-42f3-8586-9e3043462a61)
+<p align="center">
+  <img src="https://github.com/dtgreene/ebbplotter/assets/24302976/0709451a-f001-42f3-8586-9e3043462a61" width="400" />
+</p>
 
 You can also preview plots to get an idea of the dimensions and layout of the actual plot including pen down and pen up movements.
 
