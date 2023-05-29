@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "plot": "node src/index.js"
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "Dylan Greene",
@@ -13,10 +13,13 @@
   "dependencies": {
     "adaptive-bezier-curve": "^1.0.3",
     "fast-xml-parser": "^4.2.2",
+    "inquirer": "^9.2.6",
     "loglevel": "^1.8.1",
-    "prompt": "^1.3.0",
     "serialport": "^11.0.0",
     "style-to-object": "^0.4.1",
     "svgpath": "^2.6.0"
+  },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
   }
 }
