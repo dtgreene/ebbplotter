@@ -10,7 +10,7 @@ A plotting program for machines using the [EiBotBoard](http://www.schmalzhaus.co
 
 Most of the options are configured for my DIY machine so you may need to tweak some values before using.  Especially the plot dimensions to avoid machine crashes.
 
-From there, the easiest way to plot is to place your SVG file in the `src/assets` directory and run `npm start`.  The prompt will offer a few operations to choose from with the first being plot.
+From there, the easiest way to plot is to place your SVG file in the `src/assets` directory and run `npm start`.  The prompt will offer a few operations to choose from.
 
 ![image](https://github.com/dtgreene/ebbplotter/assets/24302976/0709451a-f001-42f3-8586-9e3043462a61)
 
