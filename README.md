@@ -29,7 +29,7 @@ You can also preview plots to get an idea of the dimensions and layout of the ac
 
 ## Options
 
-Most of the options you may want to change are defined in [constants.js](src/constants.js#L16). 
+Most of the options you may want to change are defined in [constants.js](src/constants.js). 
 
 ## License
 
