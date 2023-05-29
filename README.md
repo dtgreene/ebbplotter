@@ -14,7 +14,7 @@ From there, the easiest way to plot is to place your SVG file in the `src/assets
 
 ![image](https://github.com/dtgreene/ebbplotter/assets/24302976/0709451a-f001-42f3-8586-9e3043462a61)
 
-You can also preview plots to get an idea of the dimensions and layout of the actual plot.
+You can also preview plots to get an idea of the dimensions and layout of the actual plot including pen down and pen up movements.
 
 ![output](https://github.com/dtgreene/ebbplotter/assets/24302976/4b212ce1-1a53-403a-b823-697bbb8a3d8e)
 
