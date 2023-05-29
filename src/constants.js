@@ -33,8 +33,8 @@ export const SERVO_OPTIONS = {
   height: {
     min: 9855,
     max: 27831,
-    up: 70,
-    down: 30,
+    up: 40,
+    down: 0,
   },
 };
 export const WORK_AREA_DIMENSIONS = {
