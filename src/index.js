@@ -381,7 +381,8 @@ async function checkVoltage() {
   if (!IS_VIRTUAL) {
     const { current, voltage } = await operator.getMotorCurrent();
 
-    console.log(current, voltage);
+    logger.debug(`Motor current: ${current.toFixed(2)}a`);
+    logger.debug(`Motor voltage: ${voltage.toFixed(2)}v`);
 
     if (voltage < PLOT_VOLTAGE) {
       exitWithError(
