@@ -3,8 +3,9 @@
 <p align="center">
   <img src="https://github.com/dtgreene/ebbplotter/assets/24302976/16256342-f252-4e7a-ac87-e87c649266f8" width="400" />
 </p>
-
-A plotting program for machines using the [EiBotBoard](http://www.schmalzhaus.com/EBB/).
+<p align="center">
+  A plotting program for machines using the [EiBotBoard](http://www.schmalzhaus.com/EBB/)
+</p>
 
 ## Usage
 
