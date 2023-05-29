@@ -10,6 +10,8 @@ A script for plotting SVG images using [EiBotBoard](http://www.schmalzhaus.com/E
 
 To plot, simply place the SVG file in `src/assets` and run `npm run plot`.  The script will prompt for the file name as well as the width of the final image in millimeters.  
 
+This project is not a library but more of a collection of scripts. You can check [the main script](src/index.js) for basic plotting usage.
+
 ## Usage notes
 - SVG width and height properties are required and should contain only numbers (no units included).  These values are always treated as millimeters which may be different from other plotting programs.
 - There currently is no acceleration/jerk control.  Plotting is simply executed as constant speed, point-to-point movements.  Care should be taken when adjusting the speed settings to preserve accuracy and prevent possible damage to the machine.
