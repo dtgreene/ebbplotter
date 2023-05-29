@@ -54,12 +54,17 @@ export const SEGMENT_OPTIONS = {
   angleEpsilon: 0.01,
   angleTolerance: 0,
   cuspLimit: 0,
+  sort: {
+    enabled: true,
+  },
   round: {
     precision: 4,
+    enabled: true,
   },
   simplify: {
     mergeDistance: 0.1,
     minPathSize: 1,
+    enabled: true,
   },
 };
 export const PATH_SELECTOR = (path) => path.id === 'layer1';

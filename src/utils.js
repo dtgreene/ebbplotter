@@ -141,9 +141,15 @@ export function segmentSVG(data, outWidth, selector) {
   }, []);
 
   // optimizations
-  segments = round(segments, SEGMENT_OPTIONS.round.precision);
-  segments = simplify(segments, SEGMENT_OPTIONS.simplify);
-  segments = sort(segments);
+  if (SEGMENT_OPTIONS.round.enabled) {
+    segments = round(segments, SEGMENT_OPTIONS.round.precision);
+  }
+  if (SEGMENT_OPTIONS.simplify.enabled) {
+    segments = simplify(segments, SEGMENT_OPTIONS.simplify);
+  }
+  if (SEGMENT_OPTIONS.sort.enabled) {
+    segments = sort(segments);
+  }
 
   return segments;
 }
