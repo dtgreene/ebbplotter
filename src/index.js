@@ -48,7 +48,7 @@ const plotQuestions = [
     type: 'input',
     name: 'fileName',
     message: 'Enter the name of the file to plot (with extension)',
-    default: '',
+    default: 'rabbit.svg',
     validate: (value) => {
       if (!value) {
         return 'Please enter a value';
@@ -66,7 +66,7 @@ const plotQuestions = [
     type: 'input',
     name: 'plotWidth',
     message: 'Enter the output width of the file in mm',
-    default: '',
+    default: String(WORK_AREA_DIMENSIONS.width),
     validate: (value) => {
       if (!value) {
         return 'Please enter a value';
@@ -176,7 +176,7 @@ async function createPlotPreview(createCanvas, segments) {
   ]);
 
   const dimensionPadding = 48;
-  const scale = 4;
+  const scale = 3;
 
   const { width, height } = WORK_AREA_DIMENSIONS;
 
@@ -190,9 +190,24 @@ async function createPlotPreview(createCanvas, segments) {
   );
   const ctx = canvas.getContext('2d');
 
+  const colors = {
+    dimensions: 'red',
+    penDown: 'black',
+    penUp: 'blue',
+    background: '#dedede',
+  };
+
+  ctx.fillStyle = colors.background;
+  ctx.fillRect(
+    0,
+    0,
+    scaledWidth + dimensionPadding,
+    scaledHeight + dimensionPadding
+  );
+
   // draw the dimensions outline
-  ctx.strokeStyle = 'red';
-  ctx.fillStyle = 'red';
+  ctx.strokeStyle = colors.dimensions;
+  ctx.fillStyle = colors.dimensions;
   ctx.strokeRect(0, 0, scaledWidth, scaledHeight);
 
   // draw dimensions text
@@ -212,22 +227,40 @@ async function createPlotPreview(createCanvas, segments) {
   ctx.fillText(`${height}mm`, 0, 0);
   ctx.restore();
 
-  // draw line segments
-  ctx.strokeStyle = 'blue';
-  for (let i = 0; i < segments.length; i++) {
-    // move to the first position
-    ctx.beginPath(segments[i][0] * scale, segments[i][1] * scale);
+  // scaling here makes drawing a little cleaner in the next step
+  const scaledSegments = segments.map((points) =>
+    points.map((value) => value * scale)
+  );
 
-    // start at the second position
-    for (let j = 2; j < segments[i].length; j += 2) {
-      const x = segments[i][j] * scale;
-      const y = segments[i][j + 1] * scale;
+  // draw line segments
+  let lastSegment = [0, 0];
+
+  scaledSegments.forEach((points) => {
+    // draw pen up movement
+    ctx.beginPath();
+    ctx.moveTo(lastSegment[0], lastSegment[1]);
+    ctx.strokeStyle = colors.penUp;
+    ctx.lineTo(points[0], points[1]);
+    ctx.stroke();
+
+    // draw pen down movement
+    ctx.strokeStyle = colors.penDown;
+    ctx.beginPath();
+    ctx.moveTo(points[0], points[1]);
+    for (let i = 2; i < points.length; i += 2) {
+      const x = points[i];
+      const y = points[i + 1];
 
       ctx.lineTo(x, y);
-    }
 
+      lastSegment = [x, y];
+    }
+    // actually closing the path helps prevent weird artifacts
+    if (points[0] === lastSegment[0] && points[1] === lastSegment[1]) {
+      ctx.closePath();
+    }
     ctx.stroke();
-  }
+  });
 
   // create the directory if non-existant
   if (!existsSync('src/output')) {
