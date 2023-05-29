@@ -6,20 +6,25 @@ export class Operator {
   constructor(serial) {
     this.serial = serial;
   }
-  getMotorVoltage = async () => {
+  getMotorCurrent = async () => {
     try {
       const result = await this.serial.write('QC');
       // result format: value1,value2\r\nOK\r\n
       const values = result.replace(RESPONSE_ACK, '').trim().split(',');
-      const vPlusVoltage = parseInt(values[1]);
+      const value1 = parseInt(values[0]);
+      const value2 = parseInt(values[1]);
 
-      if (isNaN(vPlusVoltage)) {
-        throw new Error('Could not parse voltage');
+      if (isNaN(value1) || isNaN(value2)) {
+        throw new Error('Parsing failed');
       }
 
-      return vPlusVoltage;
+      // https://evil-mad.github.io/EggBot/ebb.html#QC
+      const current = (value1 * 3.3) / 1024 / 1.76;
+      const voltage = ((value2 * 3.3) / 1024) * 9.2 + 0.3;
+
+      return { current, voltage };
     } catch (e) {
-      throw new Error(`Voltage check failed: ${e}`);
+      throw new Error(`Could not get motor voltages: ${e}`);
     }
   };
   penDown = async () => {

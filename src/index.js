@@ -97,13 +97,32 @@ async function main() {
         type: 'list',
         name: 'task',
         message: 'What would you like to do?',
-        choices: ['Plot', 'Cycle pen', 'Preview plot'],
+        choices: ['Plot', 'Preview plot', 'Cycle pen', 'Check voltage'],
       },
     ]);
 
     switch (task) {
       case 'Plot': {
         await plot();
+        break;
+      }
+      case 'Preview plot': {
+        let createCanvas = null;
+
+        try {
+          const canvas = await import('canvas');
+          createCanvas = canvas.createCanvas;
+        } catch (error) {
+          exitWithError(
+            `Could not import the canvas dependency: ${error}`,
+            'For OS-specific installation instructions see https://www.npmjs.com/package/canvas'
+          );
+        }
+
+        const { fileName, plotWidth } = await inquirer.prompt(plotQuestions);
+        const segments = getSegments(fileName, Number(plotWidth));
+
+        await createPlotPreview(createCanvas, segments);
         break;
       }
       case 'Cycle pen': {
@@ -131,23 +150,13 @@ async function main() {
         await endSession();
         break;
       }
-      case 'Preview plot': {
-        let createCanvas = null;
-
-        try {
-          const canvas = await import('canvas');
-          createCanvas = canvas.createCanvas;
-        } catch (error) {
-          exitWithError(
-            `Could not import the canvas dependency: ${error}`,
-            'For OS-specific installation instructions see https://www.npmjs.com/package/canvas'
-          );
-        }
-
-        const { fileName, plotWidth } = await inquirer.prompt(plotQuestions);
-        const segments = getSegments(fileName, Number(plotWidth));
-
-        await createPlotPreview(createCanvas, segments);
+      case 'Check voltage': {
+        // start the session
+        await startSession();
+        // check motor voltage
+        await checkVoltage();
+        // end the session
+        await endSession();
         break;
       }
       default: {
@@ -370,11 +379,13 @@ function getSegments(fileName, plotWidth) {
 
 async function checkVoltage() {
   if (!IS_VIRTUAL) {
-    const motorVoltage = await operator.getMotorVoltage();
+    const { current, voltage } = await operator.getMotorCurrent();
 
-    if (motorVoltage < PLOT_VOLTAGE) {
+    console.log(current, voltage);
+
+    if (voltage < PLOT_VOLTAGE) {
       exitWithError(
-        `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`
+        `Motor voltage too low: ${voltage}. Is the power supply plugged in?`
       );
     }
   }
