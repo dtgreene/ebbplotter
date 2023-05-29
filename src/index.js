@@ -109,6 +109,10 @@ async function main() {
       case 'Cycle pen': {
         // start the session
         await startSession();
+        // check motor voltage
+        await checkVoltage();
+        // perform setup
+        await operator.setupServo();
 
         let direction = await promptDirection();
 
@@ -292,17 +296,12 @@ async function plot() {
 
   // start the session
   await startSession();
-
   // check motor voltage
-  if (!IS_VIRTUAL) {
-    const motorVoltage = await operator.getMotorVoltage();
-
-    if (motorVoltage < PLOT_VOLTAGE) {
-      exitWithError(
-        `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`
-      );
-    }
-  }
+  await checkVoltage();
+  // perform setup
+  await operator.enableMotors();
+  await operator.setupServo();
+  await operator.penUp();
 
   for (let i = 0; i < segments.length; i++) {
     logger.debug(`Starting path ${i}/${segments.length}`);
@@ -367,6 +366,18 @@ function getSegments(fileName, plotWidth) {
   }
 
   return segments;
+}
+
+async function checkVoltage() {
+  if (!IS_VIRTUAL) {
+    const motorVoltage = await operator.getMotorVoltage();
+
+    if (motorVoltage < PLOT_VOLTAGE) {
+      exitWithError(
+        `Motor voltage too low: ${motorVoltage}. Is the power supply plugged in?`
+      );
+    }
+  }
 }
 
 async function startSession() {
