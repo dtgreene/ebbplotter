@@ -1,5 +1,10 @@
 import { percentBetween, wait } from './utils.js';
-import { RESPONSE_ACK, SERVO_OPTIONS, STEPPER_OPTIONS } from './constants.js';
+import {
+  RESPONSE_ACK,
+  SERVO_OPTIONS,
+  STEPPER_OPTIONS,
+  MOVEMENT_TIME_OFFSET,
+} from './constants.js';
 
 export class Operator {
   serial = undefined;
@@ -62,6 +67,6 @@ export class Operator {
   };
   stepMotors = async (stepsX, stepsY, duration) => {
     await this.serial.write(`SM,${duration},${stepsX},${stepsY}`);
-    await wait(Math.max(0, duration - 30));
+    await wait(Math.max(0, duration - MOVEMENT_TIME_OFFSET));
   };
 }

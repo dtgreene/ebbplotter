@@ -15,6 +15,7 @@ export const BOARD_NAME = 'EiBotBoard';
 export const BOARD_MANUFACTURER = 'SchmalzHaus';
 export const MAX_STEPS_PER_SECOND = 25000;
 export const READ_WRITE_TIMEOUT = 5000;
+export const MOVEMENT_TIME_OFFSET = 50;
 export const STEPPER_OPTIONS = {
   stepMode: 2,
   stepAngle: 1.8,
