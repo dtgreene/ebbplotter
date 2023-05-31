@@ -1,4 +1,10 @@
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  readdirSync,
+} from 'node:fs';
 import { resolve } from 'node:path';
 import logger from 'loglevel';
 import inquirer from 'inquirer';
@@ -43,24 +49,15 @@ const speeds = {
   ),
 };
 
+const fileOptions = readdirSync('src/assets').filter(
+  (file) => !file.includes('.svg')
+);
 const plotQuestions = [
   {
-    type: 'input',
+    type: 'list',
     name: 'fileName',
-    message: 'Enter the name of the file to plot (with extension)',
-    default: 'rabbit.svg',
-    validate: (value) => {
-      if (!value) {
-        return 'Please enter a value';
-      }
-
-      const filePath = resolve('src/assets', value);
-      if (!existsSync(filePath)) {
-        return `${filePath} does not exist`;
-      }
-
-      return true;
-    },
+    message: 'Which file would you like to plot?',
+    choices: fileOptions,
   },
   {
     type: 'input',
@@ -89,6 +86,12 @@ async function main() {
   try {
     if (LOG_LEVEL) {
       logger.setDefaultLevel(LOG_LEVEL);
+    }
+
+    if (fileOptions.length === 0) {
+      exitWithError(
+        'No files to plot! SVG files should be added to the src/assets directory'
+      );
     }
 
     // start the prompt
