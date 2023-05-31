@@ -50,7 +50,7 @@ const speeds = {
 };
 
 const fileOptions = readdirSync('src/assets').filter(
-  (file) => !file.includes('.svg')
+  (file) => file.includes('.svg')
 );
 const plotQuestions = [
   {
@@ -90,7 +90,7 @@ async function main() {
 
     if (fileOptions.length === 0) {
       exitWithError(
-        'No files to plot! SVG files should be added to the src/assets directory'
+        'No files found! SVG files should be added to the src/assets directory'
       );
     }
 

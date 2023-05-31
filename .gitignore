@@ -2,3 +2,4 @@ node_modules
 src/output
 src/assets/*.test.svg
 *.debug.json
+.DS_STORE
