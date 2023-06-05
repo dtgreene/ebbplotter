@@ -5,7 +5,7 @@ export const MICRO_STEP_MODE = {
   4: 2,
   5: 1,
 };
-export const PLOT_VOLTAGE = 9;
+export const PLOT_VOLTAGE = 8;
 export const BAUD_RATE = 9600;
 export const SERIAL_PATH = '';
 export const RESPONSE_ACK = 'OK';

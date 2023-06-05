@@ -27,6 +27,7 @@ import {
   STEPS_PER_MM,
   STEPPER_OPTIONS,
   SKIP_PEN_UP,
+  PEN_RADIUS,
 } from './constants.js';
 
 let inProgress = false;
@@ -343,7 +344,7 @@ async function plot() {
           segments[i + 1][1],
           position.x,
           position.y
-        ) < PEN_RADIUS
+        ) > PEN_RADIUS
       ) {
         await operator.penUp();
       } else {
@@ -415,6 +416,8 @@ async function endSession() {
   try {
     // indicate progress
     inProgress = false;
+    
+    await operator.disableMotors();
     await serial.close();
   } catch (error) {
     exitWithError(`Could not close serial port: ${error}`);
