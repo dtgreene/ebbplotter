@@ -19,6 +19,7 @@ export class SerialController {
   writeCallback = undefined;
   isWaiting = false;
   writeResponse = '';
+  ignoreIncomingMessages = false;
   constructor(path, callbacks) {
     this.path = path;
     this.callbacks = callbacks;
@@ -56,18 +57,30 @@ export class SerialController {
         }
       }
 
+      // Incoming messages are ignored for a short period immediately after
+      // connecting.  Sometimes the board has artifact responses from previous
+      // runs that confuse the response logic.
+      this.ignoreIncomingMessages = true;
+
       logger.debug(`Attempting to connect to an EBB at path: ${targetPath}`);
 
       // create serial port
       this.port = new SerialPort(
         { path: targetPath, baudRate: BAUD_RATE },
-        (error) => {
+        async (error) => {
           if (!error) {
             logger.debug(
               `Connected to an EBB at path ${targetPath} at ${BAUD_RATE} bps`
             );
             this.isConnected = true;
-            resolve();
+
+            // Instead of resolving immediately, give a moment for the
+            // board to report any messages during the grace period.
+            setTimeout(() => {
+              this.ignoreIncomingMessages = false;
+
+              resolve();
+            }, 1000);
           } else {
             reject(error);
           }
@@ -165,6 +178,8 @@ export class SerialController {
     // QC - RA0_VOLTAGE,V+_VOLTAGE\r\nOK\r\n
     // SC - OK\r\n
     // EM - OK\r\n
+
+    if (this.ignoreIncomingMessages) return;
 
     const data = chunk.toString().trim();
     if (this.isWaiting) {
