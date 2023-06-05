@@ -21,12 +21,12 @@ import {
   LOG_LEVEL,
   IS_VIRTUAL,
   MAX_STEPS_PER_SECOND,
-  PEN_DIAMETER,
   PLOT_VOLTAGE,
   SERIAL_PATH,
   WORK_AREA_DIMENSIONS,
   STEPS_PER_MM,
   STEPPER_OPTIONS,
+  SKIP_PEN_UP,
 } from './constants.js';
 
 let inProgress = false;
@@ -49,8 +49,8 @@ const speeds = {
   ),
 };
 
-const fileOptions = readdirSync('src/assets').filter(
-  (file) => file.includes('.svg')
+const fileOptions = readdirSync('src/assets').filter((file) =>
+  file.includes('.svg')
 );
 const plotQuestions = [
   {
@@ -332,13 +332,19 @@ async function plot() {
       await moveTo(x, y, speeds.penDown);
     }
 
-    // if there is another segment to plot
-    if (segments[i + 1]) {
-      const xDiff = Math.abs(segments[i + 1][0] - position.x);
-      const yDiff = Math.abs(segments[i + 1][1] - position.y);
-
-      // only pen up if the start of the next segment is some distance away
-      if (xDiff > PEN_DIAMETER || yDiff > PEN_DIAMETER) {
+    // check if it's possible to skip the pen up
+    if (SKIP_PEN_UP && segments[i + 1]) {
+      // If the start of the next segment is within the pen's radius, we skip
+      // the pen up movement.  The idea is that just moving there without raising
+      // the pen wouldn't be noticeable.
+      if (
+        distanceTo(
+          segments[i + 1][0],
+          segments[i + 1][1],
+          position.x,
+          position.y
+        ) < PEN_RADIUS
+      ) {
         await operator.penUp();
       } else {
         logger.debug('Skipping pen up');

@@ -16,6 +16,7 @@ export const BOARD_MANUFACTURER = 'SchmalzHaus';
 export const MAX_STEPS_PER_SECOND = 25000;
 export const READ_WRITE_TIMEOUT = 5000;
 export const MOVEMENT_TIME_OFFSET = 50;
+export const SKIP_PEN_UP = true;
 export const STEPPER_OPTIONS = {
   stepMode: 2,
   stepAngle: 1.8,
@@ -55,6 +56,16 @@ export const SEGMENT_OPTIONS = {
   angleEpsilon: 0.01,
   angleTolerance: 0,
   cuspLimit: 0,
+};
+export const OPTIMIZATION_OPTIONS = {
+  simplify: {
+    mergeDistance: 0.1,
+    minPathSize: 1,
+    enabled: true,
+  },
+  randomizeStart: {
+    enabled: true
+  },
   sort: {
     enabled: true,
   },
@@ -62,14 +73,9 @@ export const SEGMENT_OPTIONS = {
     precision: 4,
     enabled: true,
   },
-  simplify: {
-    mergeDistance: 0.1,
-    minPathSize: 1,
-    enabled: true,
-  },
 };
 export const PATH_SELECTOR = (path) => path.id === 'layer1';
-export const PEN_DIAMETER = 0.5;
+export const PEN_RADIUS = 0.1;
 
 function getStepsPerMM() {
   const { stepMode, stepAngle, beltPitch, toothCount } = STEPPER_OPTIONS;

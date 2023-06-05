@@ -1,10 +1,15 @@
 import logger from 'loglevel';
 
-import { SEGMENT_OPTIONS, WORK_AREA_DIMENSIONS } from './constants.js';
+import {
+  SEGMENT_OPTIONS,
+  OPTIMIZATION_OPTIONS,
+  WORK_AREA_DIMENSIONS,
+} from './constants.js';
 import { segment } from './lib/segment/segment.js';
 import { round } from './lib/optimize/round.js';
 import { simplify } from './lib/optimize/simplify.js';
 import { sort } from './lib/optimize/sort.js';
+import { randomizeStart } from './lib/optimize/randomizeStart.js';
 
 /**
  * Calculates the distance between two points
@@ -141,14 +146,17 @@ export function segmentSVG(data, outWidth, selector) {
   }, []);
 
   // optimizations
-  if (SEGMENT_OPTIONS.round.enabled) {
-    segments = round(segments, SEGMENT_OPTIONS.round.precision);
+  if (OPTIMIZATION_OPTIONS.simplify.enabled) {
+    segments = simplify(segments, OPTIMIZATION_OPTIONS.simplify);
   }
-  if (SEGMENT_OPTIONS.simplify.enabled) {
-    segments = simplify(segments, SEGMENT_OPTIONS.simplify);
+  if (OPTIMIZATION_OPTIONS.randomizeStart.enabled) {
+    segments = randomizeStart(segments);
   }
-  if (SEGMENT_OPTIONS.sort.enabled) {
+  if (OPTIMIZATION_OPTIONS.sort.enabled) {
     segments = sort(segments);
+  }
+  if (OPTIMIZATION_OPTIONS.round.enabled) {
+    segments = round(segments, OPTIMIZATION_OPTIONS.round.precision);
   }
 
   return segments;
