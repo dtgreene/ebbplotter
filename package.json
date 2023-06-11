@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "adaptive-bezier-curve": "^1.0.3",
-    "fast-xml-parser": "^4.2.2",
+    "fast-xml-parser": "^4.2.4",
     "inquirer": "^9.2.6",
     "loglevel": "^1.8.1",
     "serialport": "^11.0.0",
