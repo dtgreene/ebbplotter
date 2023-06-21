@@ -53,6 +53,7 @@ const speeds = {
 const fileOptions = readdirSync('src/assets').filter((file) =>
   file.includes('.svg')
 );
+
 const plotQuestions = [
   {
     type: 'list',
