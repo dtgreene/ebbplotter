@@ -30,7 +30,7 @@ export const STEPPER_OPTIONS = {
   },
 };
 export const SERVO_OPTIONS = {
-  duration: 500,
+  duration: 300,
   rate: 0,
   height: {
     min: 9855,
