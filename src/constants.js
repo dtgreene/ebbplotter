@@ -52,7 +52,7 @@ export const LOG_LEVEL = 'debug';
 export const SEGMENT_OPTIONS = {
   recursion: 8,
   epsilon: 1.1920929e-7,
-  pathEpsilon: 0.5,
+  pathEpsilon: 0.3,
   angleEpsilon: 0.01,
   angleTolerance: 0,
   cuspLimit: 0,
