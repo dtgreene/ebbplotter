@@ -417,7 +417,7 @@ async function endSession() {
   try {
     // indicate progress
     inProgress = false;
-    
+
     await operator.disableMotors();
     await serial.close();
   } catch (error) {
