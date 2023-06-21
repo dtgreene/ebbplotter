@@ -67,6 +67,10 @@ export class Operator {
   };
   stepMotors = async (stepsX, stepsY, duration) => {
     await this.serial.write(`SM,${duration},${stepsX},${stepsY}`);
-    await wait(Math.max(0, duration - MOVEMENT_TIME_OFFSET));
+
+    const waitTime = Math.max(0, duration - MOVEMENT_TIME_OFFSET);
+    if (waitTime > 0) {
+      await wait(waitTime);
+    }
   };
 }
