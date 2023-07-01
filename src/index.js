@@ -13,8 +13,6 @@ import { SerialController } from './serial.js';
 import { Operator } from './operator.js';
 import { createPlotPreview } from './preview.js';
 import {
-  LOG_LEVEL,
-  IS_VIRTUAL,
   MAX_STEPS_PER_SECOND,
   PLOT_VOLTAGE,
   SERIAL_PATH,
@@ -27,6 +25,9 @@ import {
 
 let inProgress = false;
 let position = { x: 0, y: 0 };
+
+// Uncomment for debug messages
+// logger.setDefaultLevel('DEBUG');
 
 const serial = new SerialController(SERIAL_PATH, {
   onClose: onPortClose,
@@ -81,10 +82,6 @@ const plotQuestions = [
 
 async function main() {
   try {
-    if (LOG_LEVEL) {
-      logger.setDefaultLevel(LOG_LEVEL);
-    }
-
     if (fileOptions.length === 0) {
       exitWithError(
         'No files found! SVG files should be added to the src/assets directory'
@@ -149,22 +146,6 @@ async function main() {
         break;
       }
       case 'Acceleration test': {
-        // start the session
-        await startSession();
-
-        // perform setup
-        await operator.enableMotors();
-        await operator.setupServo();
-        await operator.penUp();
-
-        const movements = [];
-
-        for (let i = 0; i < movements.length; i += 2) {
-          await moveTo(movements[i], 0, movements[i + 1]);
-        }
-
-        // end the session
-        await endSession();
         break;
       }
       default: {
@@ -281,7 +262,7 @@ async function startSession(skipVoltageCheck = false) {
 
     await serial.open();
 
-    if (!skipVoltageCheck && !IS_VIRTUAL) {
+    if (!skipVoltageCheck) {
       const { current, voltage } = await operator.getMotorCurrent();
 
       logger.debug(`Motor current: ${current.toFixed(2)}a`);

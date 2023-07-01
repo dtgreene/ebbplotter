@@ -1,10 +1,10 @@
-// drops points within a certain distance from the previous point
-export function simplify(
-  segments,
-  { mergeDistance = 0.1, minPathSize = 0.5 } = {}
-) {
+import { distanceTo } from '../../utils.js';
+
+export function simplify(segments, options = {}) {
+  const { mergeDistance = 0.1, minPathSize = 0.5 } = options;
+
   return segments.reduce((acc, current) => {
-    // drop short paths
+    // Discard short paths
     let drop = true;
     for (let i = 2; i < current.length; i += 2) {
       const d = distanceTo(current[0], current[1], current[i], current[i + 1]);
@@ -17,7 +17,7 @@ export function simplify(
 
     if (drop) return acc;
 
-    // merge close points
+    // Merge close points
     let index = 0;
 
     const result = [];
@@ -46,7 +46,7 @@ export function simplify(
       index += increment;
     }
 
-    // set the end point to the start point if within the distance
+    // Set the end point to the start point if within the distance
     if (result.length > 3) {
       const x1 = result[0];
       const y1 = result[1];
@@ -63,8 +63,4 @@ export function simplify(
 
     return acc;
   }, []);
-}
-
-function distanceTo(x1, y1, x2, y2) {
-  return Math.hypot(x1 - x2, y1 - y2);
 }

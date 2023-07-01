@@ -1,4 +1,4 @@
-import { PEN_RADIUS } from '../../constants.js';
+import config from '../../config.ebb.js';
 import { distanceTo } from '../../utils.js';
 
 export function randomizeStart(segments) {
@@ -17,7 +17,7 @@ export function randomizeStart(segments) {
       points[pointsLength - 1]
     );
 
-    if (distance < PEN_RADIUS) {
+    if (distance < config.penRadius) {
       let startIndex = Math.floor(Math.random() * pointsLength);
 
       // The start index must be even

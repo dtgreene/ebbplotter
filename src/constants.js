@@ -5,36 +5,24 @@ export const MICRO_STEP_MODE = {
   4: 2,
   5: 1,
 };
-export const PLOT_VOLTAGE = 8;
-export const BAUD_RATE = 9600;
-export const SERIAL_PATH = '';
-export const RESPONSE_ACK = 'OK';
-export const BOARD_VENDOR_ID = 1240;
-export const BOARD_PRODUCT_ID = 64914;
-export const BOARD_NAME = 'EiBotBoard';
-export const BOARD_MANUFACTURER = 'SchmalzHaus';
-export const MAX_STEPS_PER_SECOND = 25000;
-export const READ_WRITE_TIMEOUT = 5000;
 export const MOVEMENT_TIME_OFFSET = 50;
 export const SKIP_PEN_UP = true;
-export const STEPPER_OPTIONS = {
-  stepMode: 2,
-  stepAngle: 1.8,
-  beltPitch: 2,
-  toothCount: 20,
-  speed: {
-    min: 200,
-    max: 5000,
-    up: 30,
-    down: 20,
-  },
-};
+export const PEN_RADIUS = 0.1;
+
+export const STEP_MODE = 2;
+export const STEP_ANGLE = 1.8;
+export const BELT_PITCH = 2;
+export const PULLEY_TOOTH_COUNT = 20;
+
+// const CYCLES_PER_SECOND = 25_000;
+// const LM_ACC_PER_SECOND = (2 ** 31 - 1) / CYCLES_PER_SECOND;
+
 export const SERVO_OPTIONS = {
-  duration: 300,
   rate: 0,
+  duration: 300,
   height: {
-    min: 9855,
-    max: 27831,
+    min: 9_855,
+    max: 27_831,
     up: 40,
     down: 0,
   },
@@ -44,10 +32,6 @@ export const WORK_AREA_DIMENSIONS = {
   height: 380,
 };
 export const STEPS_PER_MM = getStepsPerMM();
-export const IS_VIRTUAL = false;
-
-// see https://www.npmjs.com/package/loglevel for more info
-export const LOG_LEVEL = 'debug';
 
 export const SEGMENT_OPTIONS = {
   recursion: 8,
@@ -57,6 +41,7 @@ export const SEGMENT_OPTIONS = {
   angleTolerance: 0,
   cuspLimit: 0,
 };
+
 export const OPTIMIZATION_OPTIONS = {
   simplify: {
     mergeDistance: 0.1,
@@ -64,28 +49,21 @@ export const OPTIMIZATION_OPTIONS = {
     enabled: true,
   },
   randomizeStart: {
-    enabled: true
+    enabled: true,
   },
   sort: {
     enabled: true,
   },
-  round: {
-    precision: 4,
-    enabled: true,
-  },
 };
-export const PATH_SELECTOR = (path) => path.id === 'layer1';
-export const PEN_RADIUS = 0.1;
 
 function getStepsPerMM() {
-  const { stepMode, stepAngle, beltPitch, toothCount } = STEPPER_OPTIONS;
-
-  if (!(stepMode in MICRO_STEP_MODE)) {
+  if (!(STEP_MODE in MICRO_STEP_MODE)) {
     throw new Error('Invalid step mode');
   }
 
-  const micro = MICRO_STEP_MODE[stepMode];
-  const steps = ((360 / stepAngle) * micro) / (beltPitch * toothCount);
+  const micro = MICRO_STEP_MODE[STEP_MODE];
+  const stepsPerRotation = (360 / STEP_ANGLE) * micro;
+  const circumference = BELT_PITCH * PULLEY_TOOTH_COUNT;
 
-  return Math.round(steps);
+  return stepsPerRotation / circumference;
 }
