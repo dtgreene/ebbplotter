@@ -14,9 +14,6 @@ export const STEP_ANGLE = 1.8;
 export const BELT_PITCH = 2;
 export const PULLEY_TOOTH_COUNT = 20;
 
-// const CYCLES_PER_SECOND = 25_000;
-// const LM_ACC_PER_SECOND = (2 ** 31 - 1) / CYCLES_PER_SECOND;
-
 export const SERVO_OPTIONS = {
   rate: 0,
   duration: 300,

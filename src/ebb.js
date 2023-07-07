@@ -1,32 +1,41 @@
+import { EventEmitter } from 'node:events';
 import { ReadlineParser, SerialPort } from 'serialport';
 import logger from 'loglevel';
 
+import { wait } from './utils.js';
+import config from './config.ebb.js';
+
 const SERIAL_PRODUCT_ID = 'fd92';
 const SERIAL_MANUFACTURER = 'schmalzhaus';
+const SERIAL_VENDOR_ID = '04d8';
 const SERIAL_BAUD_RATE = 9_600;
 const WRITE_TIMEOUT = 5_000;
 const READ_TIMEOUT = 5_000;
 const MESSAGE_ACK = 'OK';
 const MOTOR_VOLTAGE_MIN = 8;
+const CYCLES_PER_SECOND = 25_000;
+const LM_ACC_PER_SECOND = (2 ** 31 - 1) / CYCLES_PER_SECOND; // = 85899.34588
 const PEN_STATE = {
   UP: 0,
   DOWN: 1,
 };
 
+const { servo, stepper } = config;
+
 export class EBB {
   port = null;
   lineParser = new ReadlineParser({ delimiter: '\r' });
   isConnected = false;
-  eventTarget = new EventTarget();
+  emitter = new EventEmitter();
   readCallback = null;
   readResponse = '';
   penState = null;
 
   on = (what, callback) => {
-    this.eventTarget.addEventListener(what, callback);
+    this.emitter.on(what, callback);
   };
   off = (what, callback) => {
-    this.eventTarget.removeEventListener(what, callback);
+    this.emitter.off(what, callback);
   };
   connect = async () => {
     if (this.isConnected) return;
@@ -36,12 +45,18 @@ export class EBB {
 
     // Find the first valid EBB
     const ebbPort = ports.find((port) => {
-      const { manufacturer, productId } = port;
+      const productId = (port.productId ?? '').toLowerCase();
 
-      return (
-        manufacturer.toLowerCase() === SERIAL_MANUFACTURER &&
-        productId === SERIAL_PRODUCT_ID
-      );
+      if (process.platform === 'win32') {
+        const vendorId = (port.vendorId ?? '').toLowerCase();
+        return vendorId === SERIAL_VENDOR_ID && productId === SERIAL_PRODUCT_ID;
+      } else {
+        const manufacturer = (port.manufacturer ?? '').toLowerCase();
+        return (
+          manufacturer === SERIAL_MANUFACTURER &&
+          productId === SERIAL_PRODUCT_ID
+        );
+      }
     });
 
     if (!ebbPort) {
@@ -72,12 +87,10 @@ export class EBB {
       this.port.once('close', this._handlePortClose);
     });
   };
-  /**
-   * Disconnects the serial connection. This instance should be considered destroyed
-   * after disconnecting and no longer be used.
-   * */
-  disconnect = () => {
+  disconnect = async () => {
     if (!this.isConnected) return;
+
+    await this.disableMotors();
 
     return new Promise((resolve, reject) => {
       this.port.flush(() => {
@@ -115,14 +128,18 @@ export class EBB {
       return false;
     }
   };
-  setupServo = async (min, max, rate) => {
+  setupServo = async () => {
     // https://evil-mad.github.io/EggBot/ebb.html#SC
+    const { min, max, rate } = servo;
+
     await this._write(`SC,10,${rate}`);
     await this._write(`SC,4,${min}`);
     await this._write(`SC,5,${max}`);
   };
-  enableMotors = async (stepMode) => {
+  enableMotors = async () => {
     // https://evil-mad.github.io/EggBot/ebb.html#EM
+    const { stepMode } = stepper;
+
     await this._write(`EM,${stepMode},${stepMode}`);
   };
   disableMotors = async () => {
@@ -131,27 +148,67 @@ export class EBB {
   };
   penDown = async () => {
     if (this.penState === PEN_STATE.DOWN) return;
-
-    await this.serial.write('SP,1');
-    await wait(SERVO_OPTIONS.duration);
+    const { duration } = servo;
     this.penState = PEN_STATE.DOWN;
+
+    await this._write('SP,1');
+    await wait(duration);
   };
   penUp = async () => {
     if (this.penState === PEN_STATE.UP) return;
 
-    await this.serial.write('SP,0');
-    await wait(SERVO_OPTIONS.duration);
+    const { duration } = servo;
     this.penState = PEN_STATE.UP;
-  };
-  // stepMotors = async (stepsX, stepsY, duration) => {
-  //   await this.serial.write(`SM,${duration},${stepsX},${stepsY}`);
 
-  //   const waitTime = Math.max(0, duration - MOVEMENT_TIME_OFFSET);
-  //   if (waitTime > 0) {
-  //     await wait(waitTime);
-  //   }
-  // };
-  _write = () => {
+    await this._write('SP,0');
+    await wait(duration);
+  };
+  moveTo = async (x1, y1, x2, y2, speed) => {
+    // https://evil-mad.github.io/EggBot/ebb.html#SM
+    const { stepsPerMM } = stepper;
+
+    const deltaX = x1 - x2;
+    const deltaY = y1 - y2;
+    const stepsX = Math.round(deltaX * stepsPerMM);
+    const stepsY = Math.round(deltaY * stepsPerMM);
+
+    if (stepsX === 0 && stepsY === 0) {
+      throw new Error('Invalid move; points are too close together');
+    }
+
+    const distance = Math.hypot(deltaX, deltaY);
+    const timeTotal = distance / speed;
+
+    await this._write(`SM,${stepsX},${stepsY}`);
+    await wait(timeTotal * 1000);
+  };
+  moveToAccelerated = async (x1, y1, x2, y2, initialSpeed, finalSpeed) => {
+    // https://evil-mad.github.io/EggBot/ebb.html#LM
+    const { stepsPerMM } = stepper;
+
+    const deltaX = x1 - x2;
+    const deltaY = y1 - y2;
+    const stepsX = deltaX * stepsPerMM;
+    const stepsY = deltaY * stepsPerMM;
+
+    if (Math.round(stepsX) === 0 && Math.round(stepsY) === 0) {
+      throw new Error('Invalid move; points are too close together');
+    }
+
+    const distance = Math.hypot(deltaX, deltaY);
+    const timeInitial = distance / initialSpeed;
+    const timeFinal = distance / finalSpeed;
+    const timeTotal = distance / ((initialSpeed + finalSpeed) / 2);
+
+    const commandX = getLMAxis(stepsX, timeInitial, timeFinal, timeTotal);
+    const commandY = getLMAxis(stepsY, timeInitial, timeFinal, timeTotal);
+
+    await this._write(`LM,${commandX},${commandY},3`);
+    await wait(timeTotal * 1000);
+  };
+  _write = (message) => {
+    logger.debug(`Writing message: ${message}`);
+
     return new Promise((resolve, reject) => {
       if (!this.isConnected) {
         reject('Not connected');
@@ -172,12 +229,14 @@ export class EBB {
       });
     });
   };
-  _writeAndRead = () => {
+  _writeAndRead = (message) => {
+    logger.debug(`Writing message: ${message}`);
+
     return new Promise((resolve, reject) => {
       if (!this.isConnected) {
         reject('Not connected');
       }
-      if (this.writeCallback) {
+      if (this.readCallback) {
         reject('Currently busy waiting for a pending response');
       }
 
@@ -213,17 +272,37 @@ export class EBB {
     // Detach the pipe
     this.port.unpipe(this.lineParser);
 
-    this.eventTarget.dispatchEvent(new CustomEvent('disconnect'));
+    this.emitter.emit('disconnect');
   };
   _handleSerialData = (chunk) => {
     const data = chunk.toString().trim();
+
+    logger.debug(`Received message: ${data}`);
+
     if (this.readCallback) {
       this.readResponse += data;
 
       // Once the message contains the ACK, reading is finished
-      if (this.writeResponse.includes(MESSAGE_ACK)) {
-        this.writeCallback(this.writeResponse);
+      if (this.readResponse.includes(MESSAGE_ACK)) {
+        this.readCallback(this.readResponse);
       }
     }
   };
+}
+
+function getLMAxis(stepCount, timeInitial, timeFinal, timeTotal) {
+  const rateInitial = Math.abs(
+    Math.round((stepCount / timeInitial) * LM_ACC_PER_SECOND)
+  );
+  const rateFinal = Math.abs(
+    Math.round((stepCount / timeFinal) * LM_ACC_PER_SECOND)
+  );
+
+  const rate = Math.round(rateInitial);
+  const count = Math.round(stepCount);
+  const acceleration = Math.round(
+    (rateFinal - rateInitial) / (timeTotal * CYCLES_PER_SECOND)
+  );
+
+  return `${rate},${count},${acceleration}`;
 }

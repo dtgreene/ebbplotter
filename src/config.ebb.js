@@ -1,9 +1,7 @@
 export default {
   stepper: {
     stepMode: 2,
-    stepAngle: 1.8,
-    beltPitch: 2,
-    pulleyToothCount: 20,
+    stepsPerMM: 40,
   },
   servo: {
     min: 10_000,
@@ -33,10 +31,36 @@ export default {
   },
   speeds: {
     // In mm per second
-    down: 20,
+    down: 100,
     // In mm per second
-    up: 50,
+    up: 200,
     // In mm per second^2
     acceleration: 5,
+    cornerFactor: 0.2,
   },
 };
+
+function getStepsPerMM(stepMode) {
+  const MICRO_STEP_MODE = {
+    1: 16,
+    2: 8,
+    3: 4,
+    4: 2,
+    5: 1,
+  };
+
+  if (!(stepMode in MICRO_STEP_MODE)) {
+    throw new Error('Invalid step mode');
+  }
+  // In degrees
+  const stepAngle = 1.8;
+  // In mm
+  const beltPitch = 2;
+  const pulleyToothCount = 20;
+
+  const micro = MICRO_STEP_MODE[stepMode];
+  const stepsPerRotation = (360 / stepAngle) * micro;
+  const circumference = beltPitch * pulleyToothCount;
+
+  return stepsPerRotation / circumference;
+}

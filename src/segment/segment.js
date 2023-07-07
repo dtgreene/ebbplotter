@@ -10,9 +10,10 @@ import { sort } from './optimize/sort.js';
 
 import createBezierBuilder from 'adaptive-bezier-curve/function.js';
 
-export function segmentSVG(data, options) {
-  const { selector, outputWidth, machineDimensions } = options;
+export function getVectorSegments(data, options) {
+  const { selector, outputWidth } = options;
   const {
+    machineDimensions,
     segment: { bezierOptions, optimizations },
   } = config;
 

@@ -33,7 +33,7 @@ export function simplify(segments, options = {}) {
       let y2 = current[index + increment + 1];
 
       while (
-        // skip the last point
+        // Skip the last point
         index + increment < current.length - 2 &&
         distanceTo(x1, y1, x2, y2) < mergeDistance
       ) {
