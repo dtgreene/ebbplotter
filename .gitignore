@@ -1,5 +1,5 @@
 node_modules
-preview/index.html
-assets/*.test.svg
+preview.html
+assets/*test.svg
 *.debug.json
 .DS_STORE

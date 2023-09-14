@@ -10,7 +10,7 @@
 ## Usage
 
 ## Usage notes
-- There currently is no support for CoreXY machines such as the AxiDraw.  This should be pretty trivial to add but I have not looked into it since this was made to control a DIY machine. 
+- There currently is no support for CoreXY machines such as the AxiDraw. This should be pretty trivial to add but I have not looked into it since this was made to control a DIY machine. 
 
 ## License
 
