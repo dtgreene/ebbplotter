@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "format": "npx prettier . --write"
   },
   "keywords": [],
   "author": "Dylan Greene",
@@ -19,5 +20,12 @@
     "serialport": "^11.0.0",
     "style-to-object": "^0.4.1",
     "svgpath": "^2.6.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.0"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true
   }
 }

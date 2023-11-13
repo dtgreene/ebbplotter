@@ -14,9 +14,9 @@ declare module 'adaptive-bezier-curve/function.js' {
     c1: Point,
     c2: Point,
     end: Point,
-    scale?: number
+    scale?: number,
   ): Point[];
   function createBezierBuilder(options?: BuilderOptions): typeof segmentBezier;
-  
+
   export = createBezierBuilder;
 }
