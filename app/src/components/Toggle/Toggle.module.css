@@ -1,0 +1,27 @@
+.toggle {
+  @apply cursor-pointer;
+}
+
+.toggle.disabled {
+  @apply opacity-50;
+}
+
+.container {
+  @apply inline-block relative rounded-full transition-colors w-12 h-7 shadow-inner;
+}
+
+.toggle.checked .container {
+  @apply bg-sky-400;
+}
+
+.slider {
+  @apply absolute rounded-full bg-white transition-all shadow;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+}
+
+.toggle.checked .slider {
+  left: 24px;
+}

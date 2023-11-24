@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  src: url('./assets/fonts/Poppins-Regular.ttf') format('opentype');
+}
+
+body {
+  @apply dark:text-white bg-white dark:bg-zinc-800 overflow-hidden text-sm;
+  font-family: 'Poppins', Helvetica, sans-serif;
+}
+
+select {
+  -moz-appearance: none; /* Firefox */
+  -webkit-appearance: none; /* Safari and Chrome */
+  appearance: none;
+}
+
+path {
+  vector-effect: non-scaling-stroke;
+}
