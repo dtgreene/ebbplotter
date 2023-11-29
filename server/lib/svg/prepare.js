@@ -2,7 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import parseStyle from 'style-to-object';
 import { reorder, merge, elideShorterThan } from 'optimize-paths';
 
-import { getPathList } from './path.js';
+import { getPathList, randomizeStart } from './path.js';
 
 const groupTags = ['svg', 'g', 'a'];
 const displayTags = [
@@ -22,7 +22,15 @@ const xmlParser = new XMLParser({
 });
 
 export function prepareSVG(data, options = {}) {
-  const { dimensions, margins, rotation, targetIds, optimizations } = options;
+  const {
+    dimensions,
+    margins,
+    alignment,
+    rotation,
+    useBoundingBox,
+    optimizations,
+    excludeIds,
+  } = options;
   const { svg } = xmlParser.parse(data);
 
   if (!svg) {
@@ -31,15 +39,9 @@ export function prepareSVG(data, options = {}) {
 
   let viewBox = parseViewBox(svg);
   let elements = flattenGroup(svg);
-
-  // Filter out elements based on group ids
-  if (targetIds && targetIds.length > 0) {
-    elements = elements.filter((element) => targetIds.includes(element.id));
-  }
-
   let groupIds = [];
 
-  // Accumulate group ids
+  // Accumulate unique group ids
   elements.forEach((element) => {
     element.groupIds.forEach((id) => {
       if (!groupIds.includes(id)) {
@@ -48,23 +50,31 @@ export function prepareSVG(data, options = {}) {
     });
   }, []);
 
-  let pathList = getPathList(elements, {
+  let { pathList, bounds } = getPathList(elements, {
     viewBox,
     dimensions,
     margins,
+    alignment,
     rotation,
+    useBoundingBox,
+    excludeIds,
   });
 
   // Path optimizations
-  // if (optimizations.merge) {}
-  // if (optimizations.elide) {}
-  // if (optimizations.reorder) {}
+  if (optimizations.merge) {
+    pathList = merge(pathList, optimizations.mergeDistance);
+  }
+  if (optimizations.removeShort) {
+    pathList = elideShorterThan(pathList, optimizations.removeShortDistance);
+  }
+  if (optimizations.reorder) {
+    pathList = reorder(pathList);
+  }
+  if (optimizations.randomizeStart) {
+    pathList = randomizeStart(pathList, optimizations.randomizeStartTolerance);
+  }
 
-  pathList = merge(pathList);
-  pathList = elideShorterThan(pathList, 0.1);
-  pathList = reorder(pathList);
-
-  return { pathList, groupIds };
+  return { pathList, bounds, groupIds };
 }
 
 function flattenGroup(group, prevTransform = '', ids = []) {

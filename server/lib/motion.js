@@ -2,6 +2,7 @@ import logger from 'loglevel';
 
 import { Config } from './config.js';
 import { getSMCommand, getLMCommand } from './movement.js';
+import { orange } from './utils.js';
 
 const EPSILON = 0.01;
 const MIN_FALLBACK_SPEED = 5;
@@ -48,7 +49,7 @@ export function getMotionPlan(path, position) {
     const prevSegment = motionSegments[motionSegments.length - 1];
 
     if (motionSegment.length === 0) {
-      logger.warn('Skipping zero-length motion segment.');
+      logger.warn(orange('Skipping zero-length motion segment.'));
       continue;
     }
 
@@ -105,7 +106,7 @@ export function getMotionPlan(path, position) {
     // Raise the pen
     commands.push('SP,0', SERVO.DURATION);
   } else {
-    logger.warn('Skipping path with no motion segments.');
+    logger.warn(orange('Skipping path with no motion segments.'));
   }
 
   // Update the position

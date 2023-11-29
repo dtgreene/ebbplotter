@@ -1,9 +1,10 @@
-import cx from 'classnames';
+import React from 'react';
+import clsx from 'clsx';
 import { useSnapshot } from 'valtio';
 
 import { alertState, hideAlert, AlertTypes } from 'src/state/alert';
 
-import CheckmarkIcon from '../Icons/Checkmark';
+import CheckMarkCircleIcon from '../Icons/CheckMarkCircle';
 import ExclaimTriangle from '../Icons/ExclaimTriangle';
 import CloseIcon from '../Icons/Close';
 
@@ -14,7 +15,7 @@ const Alert = ({ message, title, type, id, autoHide, visible }) => {
   return (
     <div
       role="alert"
-      className={cx(
+      className={clsx(
         'rounded-xl p-4 w-[500px] transition-opacity pointer-events-auto',
         { 'bg-sky-100 dark:bg-sky-100 dark:text-black': isSuccess },
         { 'bg-red-100 text-red-800 dark:text-red-900': isError },
@@ -24,7 +25,7 @@ const Alert = ({ message, title, type, id, autoHide, visible }) => {
       <div className="flex items-start gap-4">
         {isSuccess && (
           <span className="text-sky-600">
-            <CheckmarkIcon />
+            <CheckMarkCircleIcon />
           </span>
         )}
         {isError && (
@@ -37,7 +38,7 @@ const Alert = ({ message, title, type, id, autoHide, visible }) => {
           <p className="text-sm mt-[2px]">{message}</p>
         </div>
         {!autoHide && (
-          <button className="cursor-pointer">
+          <button>
             <CloseIcon onClick={() => hideAlert(id)} />
           </button>
         )}
@@ -51,7 +52,7 @@ export const Alerts = () => {
   const alertEntries = Object.entries(snap.alerts);
 
   return (
-    <div className="fixed z-20 top-0 left-0 w-full flex justify-center pointer-events-none">
+    <div className="fixed z-50 top-0 left-0 w-full flex justify-center pointer-events-none">
       <div className="flex flex-col items-center gap-4 p-4">
         {alertEntries.map(([id, alert]) => (
           <Alert key={id} {...alert} />

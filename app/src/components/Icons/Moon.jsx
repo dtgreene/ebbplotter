@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { StrokeIcon } from './Icon';
 
 export default (props) => (

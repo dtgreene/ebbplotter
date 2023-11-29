@@ -2,16 +2,12 @@
   @apply cursor-pointer;
 }
 
-.toggle.disabled {
-  @apply opacity-50;
-}
-
 .container {
   @apply inline-block relative rounded-full transition-colors w-12 h-7 shadow-inner;
 }
 
 .toggle.checked .container {
-  @apply bg-sky-400;
+  @apply bg-sky-600;
 }
 
 .slider {

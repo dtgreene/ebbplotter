@@ -1,14 +1,48 @@
 import { proxy, subscribe } from 'valtio';
 
+const STORAGE_VERSION = 0.1;
+
+export async function postRequest(state, path, body) {
+  state.isLoading = true;
+
+  try {
+    const options = { method: 'POST' };
+
+    if (body) {
+      options.body = body;
+      options.headers = {
+        'Content-Type': 'application/json',
+      };
+    }
+
+    const result = await fetch(`http://localhost:8080${path}`, options);
+    const json = await result.json();
+
+    if (result.status !== 200) {
+      throw new Error(json.message);
+    }
+
+    state.isError = false;
+    state.data = json;
+  } catch (error) {
+    state.isError = true;
+    console.error(`${path} request failed: ${error.message}`);
+  } finally {
+    state.isLoading = false;
+  }
+}
+
 export function createStorageProxy(key, defaultValue) {
   const state = proxy(getStoredValue(key, defaultValue));
 
   subscribe(state, () => {
     try {
-      localStorage.setItem(key, JSON.stringify(state));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, __version: STORAGE_VERSION }),
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Could not save state to local storage: ${message}`);
+      console.error(`Could not persist state: ${error.message}`);
     }
   });
 
@@ -21,24 +55,19 @@ function getStoredValue(key, defaultValue) {
 
     if (storageItem) {
       const parsedItem = JSON.parse(storageItem);
-      const keys = Object.keys(defaultValue);
 
-      // Perform a basic check to verify that the stored value contains all the
-      // keys of the default value.
-      for (let i = 0; i < keys.length; i++) {
-        if (parsedItem[keys[i]] === undefined) {
-          // Overwrite the saved state
-          localStorage.setItem(key, JSON.stringify(defaultValue));
+      if (parsedItem.__version >= STORAGE_VERSION) {
+        return parsedItem;
+      } else {
+        // Overwrite the saved state
+        localStorage.setItem(key, JSON.stringify(defaultValue));
 
-          return defaultValue;
-        }
+        return defaultValue;
       }
-
-      return parsedItem;
-    } else {
-      return defaultValue;
     }
   } catch {
-    return defaultValue;
+    console.warn('Could not parse local storage value');
   }
+
+  return defaultValue;
 }

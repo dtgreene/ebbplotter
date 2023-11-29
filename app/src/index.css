@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Montserrat';
   font-style: normal;
-  src: url('./assets/fonts/Poppins-Regular.ttf') format('opentype');
+  src: url('./assets/Montserrat-VariableFont_wght.ttf') format('opentype');
 }
 
 body {
   @apply dark:text-white bg-white dark:bg-zinc-800 overflow-hidden text-sm;
-  font-family: 'Poppins', Helvetica, sans-serif;
+  font-family: 'Montserrat', Helvetica, sans-serif;
 }
 
 select {
@@ -21,4 +21,16 @@ select {
 
 path {
   vector-effect: non-scaling-stroke;
+}
+
+.__border {
+  @apply border border-zinc-300 dark:border-zinc-700;
+}
+
+.__text-muted {
+  @apply text-zinc-700 dark:text-zinc-400;
+}
+
+.__shadow {
+  @apply shadow-lg shadow-zinc-300 dark:shadow-zinc-900;
 }

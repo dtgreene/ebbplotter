@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { FillIcon } from './Icon';
 
 export default (props) => (

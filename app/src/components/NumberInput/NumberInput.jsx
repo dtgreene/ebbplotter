@@ -1,4 +1,7 @@
-import cx from 'classnames';
+import React from 'react';
+import clsx from 'clsx';
+
+import { FieldLabel } from '../FieldLabel';
 
 export const NumberInput = ({
   value,
@@ -7,34 +10,34 @@ export const NumberInput = ({
   className,
   label,
   units,
-  type = 'number',
+  step = 'any',
+  min = '0',
+  max,
   inputProps = {},
 }) => {
   const { className: inputClassName, ...otherInputProps } = inputProps;
 
   return (
     <div className={className}>
-      {label && (
-        <label className="text-xs block text-zinc-600 dark:text-zinc-400">
-          {label}
-        </label>
-      )}
+      {label && <FieldLabel className="mb-1">{label}</FieldLabel>}
       <div className="relative">
         <input
-          className={cx(
-            'h-8 bg-transparent rounded px-2 py-1 border border-zinc-400 dark:border-zinc-600 w-full transition-opacity hover:opacity-75 disabled:opacity-50',
-            inputClassName,
-          )}
           value={value}
           onChange={onChange}
-          type={type}
-          min="0"
-          step="any"
           disabled={disabled}
+          className={clsx(
+            'h-8 bg-transparent rounded px-2 py-1 __border w-full transition-opacity',
+            { 'opacity-50': disabled, 'hover:opacity-75': !disabled },
+            inputClassName,
+          )}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
           {...otherInputProps}
         />
         {units && (
-          <div className="absolute right-8 top-2 text-xs pointer-events-none text-zinc-600 dark:text-zinc-400">
+          <div className="absolute right-8 top-2 text-xs pointer-events-none __text-muted">
             {units}
           </div>
         )}

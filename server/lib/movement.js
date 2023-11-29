@@ -1,10 +1,22 @@
-import { Config } from './config.js';
-
 const CYCLES_PER_SECOND = 25_000;
 const LM_ACC_PER_SECOND = 2 ** 31 / CYCLES_PER_SECOND;
 
-export function getLMCommand(x1, y1, x2, y2, entrySpeed, exitSpeed) {
-  const { deltaX, deltaY, stepsX, stepsY } = getSteps(x1, y1, x2, y2);
+export function getLMCommand(
+  x1,
+  y1,
+  x2,
+  y2,
+  entrySpeed,
+  exitSpeed,
+  stepper,
+) {
+  const { deltaX, deltaY, stepsX, stepsY } = getSteps(
+    x1,
+    y1,
+    x2,
+    y2,
+    stepper,
+  );
 
   if (entrySpeed === 0 && exitSpeed === 0) {
     throw new Error(
@@ -27,8 +39,14 @@ export function getLMCommand(x1, y1, x2, y2, entrySpeed, exitSpeed) {
   return [`LM,${commandX},${commandY},3`, duration];
 }
 
-export function getSMCommand(x1, y1, x2, y2, speed) {
-  const { deltaX, deltaY, stepsX, stepsY } = getSteps(x1, y1, x2, y2);
+export function getSMCommand(x1, y1, x2, y2, speed, stepper) {
+  const { deltaX, deltaY, stepsX, stepsY } = getSteps(
+    x1,
+    y1,
+    x2,
+    y2,
+    stepper,
+  );
 
   if (speed === 0) {
     throw new Error('Invalid SM command input; speed cannot be zero');
@@ -43,26 +61,25 @@ export function getSMCommand(x1, y1, x2, y2, speed) {
   return [`SM,${Math.round(duration)},${stepsX},${stepsY}`, duration];
 }
 
-function getSteps(x1, y1, x2, y2) {
-  const { STEPS_PER_MM } = Config.STEPPER;
-  const { INVERT_X, INVERT_Y, CORE_XY } = Config;
+function getSteps(x1, y1, x2, y2, stepper) {
+  const { stepsPerMM, invertX, invertY, coreXY } = stepper;
 
-  const deltaX = INVERT_X ? x1 - x2 : x2 - x1;
-  const deltaY = INVERT_Y ? y1 - y2 : y2 - y1;
+  const deltaX = invertX ? x1 - x2 : x2 - x1;
+  const deltaY = invertY ? y1 - y2 : y2 - y1;
 
-  if (CORE_XY) {
+  if (coreXY) {
     return {
       deltaX,
       deltaY,
       stepsX: Math.round((deltaX + deltaY) * stepsPerMM),
-      stepsY: Math.round((deltaX - deltaY) * STEPS_PER_MM),
+      stepsY: Math.round((deltaX - deltaY) * stepsPerMM),
     };
   } else {
     return {
       deltaX,
       deltaY,
-      stepsX: Math.round(deltaX * STEPS_PER_MM),
-      stepsY: Math.round(deltaY * STEPS_PER_MM),
+      stepsX: Math.round(deltaX * stepsPerMM),
+      stepsY: Math.round(deltaY * stepsPerMM),
     };
   }
 }

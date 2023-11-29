@@ -1,19 +1,18 @@
-import cx from 'classnames';
+import React from 'react';
+import clsx from 'clsx';
 
 import styles from './Button.module.css';
 
 export const Button = ({
-  children,
   variant = 'primary',
   className,
-  active,
+  children,
   ...other
 }) => (
   <button
-    className={cx(
+    className={clsx(
       styles.base,
       styles[variant],
-      { [styles.active]: active },
       className,
     )}
     {...other}
@@ -23,5 +22,5 @@ export const Button = ({
 );
 
 export const ButtonGroup = ({ className, children }) => (
-  <div className={cx(styles.buttonGroup, className)}>{children}</div>
+  <div className={clsx(styles.buttonGroup, className)}>{children}</div>
 );

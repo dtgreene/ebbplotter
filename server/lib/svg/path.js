@@ -2,6 +2,8 @@ import logger from 'loglevel';
 import SVGPath from 'svgpath';
 import createBezierBuilder from 'adaptive-bezier-curve/function.js';
 
+import { orange } from '../utils.js';
+
 // See:
 // https://github.com/mattdesl/adaptive-bezier-curve/blob/master/function.js#L12-L18
 const DEFAULT_BEZIER_OPTIONS = {
@@ -13,7 +15,15 @@ const segmentBezier = createBezierBuilder(DEFAULT_BEZIER_OPTIONS);
 
 export function getPathList(
   elements,
-  { viewBox, dimensions, margins, rotation },
+  {
+    viewBox,
+    dimensions,
+    margins,
+    alignment,
+    rotation,
+    useBoundingBox,
+    excludeIds,
+  },
 ) {
   const bounds = {
     minX: Infinity,
@@ -103,7 +113,7 @@ export function getPathList(
             break;
           }
           default: {
-            logger.warn(`Encountered unknown path command: ${command}`);
+            logger.warn(orange(`Encountered unknown path command: ${command}`));
           }
         }
       });
@@ -116,82 +126,120 @@ export function getPathList(
       segmentList.forEach((segment) => {
         const path = [];
         for (let i = 0; i < segment.length; i += 2) {
-          path.push({ x: segment[i], y: segment[i + 1] });
+          const point = { x: segment[i], y: segment[i + 1] };
+
+          // Update the bounding box
+          bounds.minX = Math.min(point.x, bounds.minX);
+          bounds.maxX = Math.max(point.x, bounds.maxX);
+          bounds.minY = Math.min(point.y, bounds.minY);
+          bounds.maxY = Math.max(point.y, bounds.maxY);
+
+          path.push(point);
         }
-        result.push(path);
+
+        // Only include the path if it's not excluded. This is done here so that
+        // the path will be factored into the bounding box first.
+        let keepPath = true;
+        for (let i = 0; i < element.groupIds.length; i++) {
+          const id = element.groupIds[i];
+          if (excludeIds.includes(id)) {
+            keepPath = false;
+            break;
+          }
+        }
+
+        if (keepPath) {
+          result.push(path);
+        }
       });
     }
 
     return result;
   }, []);
 
-  // Calculate bounds
-  pathList.forEach((path) => {
-    path.forEach((position) => {
-      bounds.minX = Math.min(position.x, bounds.minX);
-      bounds.maxX = Math.max(position.x, bounds.maxX);
-      bounds.minY = Math.min(position.y, bounds.minY);
-      bounds.maxY = Math.max(position.y, bounds.maxY);
-    });
-  });
+  let inputWidth = 0;
+  let inputHeight = 0;
+  let offsetX = 0;
+  let offsetY = 0;
 
-  const boundsWidth = bounds.maxX - bounds.minX;
-  const boundsHeight = bounds.maxY - bounds.minY;
+  if (useBoundingBox) {
+    inputWidth = bounds.maxX - bounds.minX;
+    inputHeight = bounds.maxY - bounds.minY;
 
-  const dimensionsWidth = dimensions.width - (margins.left + margins.right);
-  const dimensionsHeight = dimensions.height - (margins.top + margins.bottom);
+    offsetX = -bounds.minX;
+    offsetY = -bounds.minY;
+  } else {
+    const rotationRads = (rotation * Math.PI) / 180;
+    const sin = Math.abs(Math.sin(rotationRads));
+    const cos = Math.abs(Math.cos(rotationRads));
 
-  const scale = Math.min(
-    dimensionsWidth / boundsWidth,
-    dimensionsHeight / boundsHeight,
-  );
+    inputWidth = viewBox.width * cos + viewBox.height * sin;
+    inputHeight = viewBox.width * sin + viewBox.height * cos;
 
-  const offsetX =
-    -bounds.minX * scale + (dimensionsWidth - boundsWidth * scale) * 0.5;
-  const offsetY =
-    -bounds.minY * scale + (dimensionsHeight - boundsHeight * scale) * 0.5;
-
-  pathList.forEach((path) => {
-    path.forEach((position) => {
-      position.x = position.x * scale + offsetX + margins.left;
-      position.y = position.y * scale + offsetY + margins.top;
-    });
-  });
-
-  return pathList;
-}
-
-export function randomizeStart(path, mergeDistance) {
-  // Basically we need to see if this path is a complete loop
-  const pathLength = path.length;
-  const distance = distanceTo(
-    path[0],
-    path[1],
-    path[pathLength - 2],
-    path[pathLength - 1],
-  );
-
-  if (distance < mergeDistance) {
-    let startIndex = Math.floor(Math.random() * pathLength);
-
-    // The start index must be even
-    if (startIndex % 2 !== 0) {
-      startIndex++;
-    }
-
-    if (startIndex > 1 && startIndex < pathLength - 2) {
-      const startingPoint = path.slice(startIndex, startIndex + 2);
-
-      // Recreate the path starting from a new point. We also remove the
-      // current ending point and replace it with the new starting point.
-      return path
-        .slice(startIndex)
-        .concat(path.slice(2, startIndex))
-        .concat(startingPoint);
-    }
+    offsetX = (inputWidth - viewBox.width) * 0.5;
+    offsetY = (inputHeight - viewBox.height) * 0.5;
   }
 
-  return path;
+  if (inputWidth === 0 || inputHeight === 0) {
+    throw new Error('Could not determine SVG dimensions');
+  }
+
+  const outputWidth = dimensions.width - (margins.left + margins.right);
+  const outputHeight = dimensions.height - (margins.top + margins.bottom);
+  const scale = Math.min(outputWidth / inputWidth, outputHeight / inputHeight);
+
+  const alignX = (outputWidth - inputWidth * scale) * 0.5 * alignment;
+  const alignY = (outputHeight - inputHeight * scale) * 0.5 * alignment;
+
+  pathList.forEach((path) => {
+    path.forEach((point) => {
+      point.x = (point.x + offsetX) * scale + alignX + margins.left;
+      point.y = (point.y + offsetY) * scale + alignY + margins.top;
+    });
+  });
+
+  // Scale the bounds
+  bounds.minX = (bounds.minX + offsetX) * scale + alignX + margins.left;
+  bounds.minY = (bounds.minY + offsetY) * scale + alignY + margins.top;
+  bounds.maxX = (bounds.maxX + offsetX) * scale + alignX + margins.left;
+  bounds.maxY = (bounds.maxY + offsetY) * scale + alignY + margins.top;
+
+  return { pathList, bounds };
+}
+
+export function randomizeStart(pathList, tolerance) {
+  return pathList.map((path) => {
+    // Basically we need to see if this path is a complete loop
+    const pathLength = path.length;
+    const distance = distanceTo(
+      path[0].x,
+      path[0].y,
+      path[pathLength - 1].x,
+      path[pathLength - 1].y,
+    );
+
+    if (distance < tolerance) {
+      let startIndex = Math.floor(Math.random() * pathLength);
+
+      // The start index must be even
+      if (startIndex % 2 !== 0) {
+        startIndex++;
+      }
+
+      if (startIndex > 0 && startIndex < pathLength - 1) {
+        const startingPoint = path[startIndex];
+
+        // Recreate the path starting from a new point. We also remove the
+        // current ending point and replace it with the new starting point.
+        return path
+          .slice(startIndex)
+          .concat(path.slice(0, startIndex))
+          .concat(startingPoint);
+      }
+    }
+
+    return path;
+  });
 }
 
 function getPathData(element) {
@@ -225,11 +273,7 @@ function getPathData(element) {
 
 function getNumberProps(element, props) {
   return props.map((prop) => {
-    if (typeof element[prop] === 'number') {
-      return Number(element[current]);
-    } else {
-      return 0;
-    }
+    return Number(element[prop]);
   });
 }
 
@@ -297,7 +341,6 @@ function getRect(element) {
 
 function getCircle(element) {
   const [cx, cy, r] = getNumberProps(element, ['cx', 'cy', 'r']);
-
   return renderPath([
     'M',
     [cx - r, cy],

@@ -11,11 +11,6 @@ export const Config = {
     MIN_COMMAND_DISTANCE: 0.025,
     STEPS_PER_MM: 40,
   },
-  WORK_AREA: {
-    WIDTH: 380,
-    HEIGHT: 380,
-    TOLERANCE: 0.1,
-  },
   SERVO: {
     // See: https://evil-mad.github.io/EggBot/ebb.html#SC
     MIN: 10_000,

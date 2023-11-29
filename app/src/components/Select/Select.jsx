@@ -1,5 +1,7 @@
-import cx from 'classnames';
+import React from 'react';
+import clsx from 'clsx';
 
+import { FieldLabel } from '../FieldLabel';
 import ChevronDownIcon from '../Icons/ChevronDown';
 
 export const Select = ({
@@ -14,25 +16,26 @@ export const Select = ({
   const { className: inputClassName, ...otherInputProps } = inputProps;
 
   return (
-    <div className={className}>
-      {label && (
-        <label className="text-xs block text-zinc-600 dark:text-zinc-400">
-          {label}
-        </label>
-      )}
+    <div className={clsx('w-full', className)}>
+      {label && <FieldLabel className="mb-1">{label}</FieldLabel>}
       <div
-        className={cx('relative transition-opacity hover:opacity-75', {
+        className={clsx('relative transition-opacity', {
           'opacity-50': disabled,
+          'hover:opacity-75': !disabled,
         })}
       >
         <select
-          className={cx(
-            'h-8 w-full rounded border border-zinc-400 dark:border-zinc-600 px-2 py-1 cursor-pointer bg-transparent text-inherit',
-            inputClassName,
-          )}
           value={value}
           onChange={onChange}
           disabled={disabled}
+          className={clsx(
+            'h-8 w-full rounded __border px-2 py-1 bg-transparent text-inherit',
+            {
+              'cursor-default': disabled,
+              'cursor-pointer': !disabled,
+            },
+            inputClassName,
+          )}
           {...otherInputProps}
         >
           {options.map((option) => (
