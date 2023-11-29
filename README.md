@@ -1,6 +1,6 @@
 # EBBPlotter
 
-EBBPlotter is a general purpose plotter program for machines using the <a href="http://www.schmalzhaus.com/EBB/">EiBotBoard</a>.
+Plotter software for machines using the <a href="http://www.schmalzhaus.com/EBB/">EiBotBoard</a>.
 
 ## Usage
 

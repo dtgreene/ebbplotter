@@ -1,22 +1,8 @@
 const CYCLES_PER_SECOND = 25_000;
 const LM_ACC_PER_SECOND = 2 ** 31 / CYCLES_PER_SECOND;
 
-export function getLMCommand(
-  x1,
-  y1,
-  x2,
-  y2,
-  entrySpeed,
-  exitSpeed,
-  stepper,
-) {
-  const { deltaX, deltaY, stepsX, stepsY } = getSteps(
-    x1,
-    y1,
-    x2,
-    y2,
-    stepper,
-  );
+export function getLMCommand(x1, y1, x2, y2, entrySpeed, exitSpeed, stepper) {
+  const { deltaX, deltaY, stepsX, stepsY } = getSteps(x1, y1, x2, y2, stepper);
 
   if (entrySpeed === 0 && exitSpeed === 0) {
     throw new Error(
@@ -40,13 +26,7 @@ export function getLMCommand(
 }
 
 export function getSMCommand(x1, y1, x2, y2, speed, stepper) {
-  const { deltaX, deltaY, stepsX, stepsY } = getSteps(
-    x1,
-    y1,
-    x2,
-    y2,
-    stepper,
-  );
+  const { deltaX, deltaY, stepsX, stepsY } = getSteps(x1, y1, x2, y2, stepper);
 
   if (speed === 0) {
     throw new Error('Invalid SM command input; speed cannot be zero');

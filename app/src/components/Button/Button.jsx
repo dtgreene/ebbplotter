@@ -9,14 +9,7 @@ export const Button = ({
   children,
   ...other
 }) => (
-  <button
-    className={clsx(
-      styles.base,
-      styles[variant],
-      className,
-    )}
-    {...other}
-  >
+  <button className={clsx(styles.base, styles[variant], className)} {...other}>
     {children}
   </button>
 );

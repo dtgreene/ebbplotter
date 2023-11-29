@@ -9,7 +9,7 @@
 }
 
 body {
-  @apply dark:text-white bg-white dark:bg-zinc-800 overflow-hidden text-sm;
+  @apply dark:text-white bg-white dark:bg-zinc-800 overflow-hidden;
   font-family: 'Montserrat', Helvetica, sans-serif;
 }
 

@@ -37,7 +37,7 @@ export const NumberInput = ({
           {...otherInputProps}
         />
         {units && (
-          <div className="absolute right-8 top-2 text-xs pointer-events-none __text-muted">
+          <div className="absolute right-8 top-2 text-sm pointer-events-none __text-muted">
             {units}
           </div>
         )}

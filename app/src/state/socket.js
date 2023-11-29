@@ -51,7 +51,7 @@ function handleOpen() {
 function handleMessage(event) {
   try {
     const data = JSON.parse(event.data);
-    
+
     switch (data.type) {
       case 'status': {
         const { serial } = data.payload;

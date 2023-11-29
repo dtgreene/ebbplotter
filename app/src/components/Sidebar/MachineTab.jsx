@@ -417,7 +417,7 @@ export const MachineTab = () => {
         </Button>
         <div className="flex justify-center">
           <button
-            className="hover:underline __text-muted text-xs transition-opacity disabled:opacity-50"
+            className="hover:underline __text-muted text-sm transition-opacity disabled:opacity-50"
             disabled={controlIsDisabled}
             onClick={rebootBoard}
           >

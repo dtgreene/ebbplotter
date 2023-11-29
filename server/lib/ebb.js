@@ -200,29 +200,14 @@ export class EBB {
   move = async (x1, y1, x2, y2, speed, stepper) => {
     // https://evil-mad.github.io/EggBot/ebb.html#SM
     // versions: all
-    const [command, duration] = getSMCommand(
-      x1,
-      y1,
-      x2,
-      y2,
-      speed,
-      stepper,
-    );
+    const [command, duration] = getSMCommand(x1, y1, x2, y2, speed, stepper);
     await this.write(command);
 
     if (duration > 0) {
       await wait(duration);
     }
   };
-  moveAccelerated = async (
-    x1,
-    y1,
-    x2,
-    y2,
-    entrySpeed,
-    exitSpeed,
-    stepper,
-  ) => {
+  moveAccelerated = async (x1, y1, x2, y2, entrySpeed, exitSpeed, stepper) => {
     // https://evil-mad.github.io/EggBot/ebb.html#LM
     // versions: v2.7.0 and above
     const [command, duration] = getLMCommand(
