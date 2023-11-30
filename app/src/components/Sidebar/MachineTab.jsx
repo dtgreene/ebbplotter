@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSnapshot } from 'valtio';
 
-import { storedPlotState } from 'src/state/storedPlot';
+import { appState } from 'src/state/app';
 import { plotState } from 'src/state/plot';
 import {
   controlState,
@@ -22,121 +22,121 @@ import { CheckBox } from '../CheckBox';
 import { stepModeOptions, StepsCalculatorModal } from '../StepsCalculatorModal';
 
 const handleShowAdvancedChange = () => {
-  storedPlotState.showAdvancedSettings = !storedPlotState.showAdvancedSettings;
+  appState.showAdvancedSettings = !appState.showAdvancedSettings;
 };
 
 const handleUpSpeedChange = ({ target }) => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.upSpeed = target.value;
 };
 
 const handleDownSpeedChange = ({ target }) => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.downSpeed = target.value;
 };
 
 const handleAccelerationChange = ({ target }) => {
-  const { planning } = storedPlotState.machine;
+  const { planning } = appState.machine;
   planning.acceleration = target.value;
 };
 
 const handleUpPercentChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.upPercent = target.value;
 };
 
 const handleDownPercentChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.downPercent = target.value;
 };
 
 const handleStepsPerMMChange = ({ target }) => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.stepsPerMM = target.value;
 };
 
 const handleStepModeChange = ({ target }) => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.stepMode = target.value;
 };
 
 const handleInvertXChange = () => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.invertX = !stepper.invertX;
 };
 
 const handleInvertYChange = () => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.invertY = !stepper.invertY;
 };
 
 const handleCoreXYChange = () => {
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   stepper.coreXY = !stepper.coreXY;
 };
 
 const handleCornerFactorChange = ({ target }) => {
-  const { planning } = storedPlotState.machine;
+  const { planning } = appState.machine;
   planning.cornerFactor = target.value;
 };
 
 const handleMinPositionChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.minPosition = target.value;
 };
 
 const handleMaxPositionChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.maxPosition = target.value;
 };
 
 const handleDurationChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.duration = target.value;
 };
 
 const handleRateChange = ({ target }) => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   servo.rate = target.value;
 };
 
 const handlePenUpClick = () => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   setPen(servo.upPercent);
 };
 
 const handlePenDownClick = () => {
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   setPen(servo.downPercent);
 };
 
 const handleJogDistanceChange = (event) => {
-  storedPlotState.jogDistance = event.target.value;
+  appState.jogDistance = event.target.value;
 };
 
 const handleJogSpeedChange = (event) => {
-  storedPlotState.jogSpeed = event.target.value;
+  appState.jogSpeed = event.target.value;
 };
 
 const handleYPlusClick = () => {
-  jog(0, storedPlotState.jogDistance);
+  jog(0, appState.jogDistance);
 };
 
 const handleXMinusClick = () => {
-  jog(-storedPlotState.jogDistance, 0);
+  jog(-appState.jogDistance, 0);
 };
 
 const handleXPlusClick = () => {
-  jog(storedPlotState.jogDistance, 0);
+  jog(appState.jogDistance, 0);
 };
 
 const handleYMinusClick = () => {
-  jog(0, -storedPlotState.jogDistance);
+  jog(0, -appState.jogDistance);
 };
 
 export const MachineTab = () => {
   const [stepsModalActive, setStepsModalActive] = useState(false);
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
   const socketSnap = useSnapshot(socketState);
   const controlSnap = useSnapshot(controlState);
@@ -149,18 +149,18 @@ export const MachineTab = () => {
     setStepsModalActive(false);
   };
 
-  const { isLoading: previewIsLoading } = plotSnap.preview;
-  const { isLoading: controlIsLoading } = controlSnap.request;
+  const { isLoading: previewIsLoading } = plotSnap.previewRequest;
+  const { isLoading: controlIsLoading } = controlSnap.controlRequest;
 
-  const { stepper, planning, servo } = storedPlotSnap.machine;
-  const showAdvanced = storedPlotSnap.showAdvancedSettings;
-  const { serial } = socketSnap;
+  const { stepper, planning, servo } = appSnap.machine;
+  const showAdvanced = appSnap.showAdvancedSettings;
+  const { plotter } = socketSnap;
   const controlIsDisabled =
-    previewIsLoading || controlIsLoading || !serial.isConnected;
+    previewIsLoading || controlIsLoading || !plotter.isConnected;
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-8">
         <CheckBox value={showAdvanced} onChange={handleShowAdvancedChange} />
         <FieldLabel>Show Advanced</FieldLabel>
       </div>
@@ -229,7 +229,7 @@ export const MachineTab = () => {
               variant="primaryOutlined"
               onClick={handleOpenStepsModalClick}
               disabled={previewIsLoading}
-              className="my-1"
+              className="my-4"
             >
               Open Steps Calculator
             </Button>
@@ -392,14 +392,14 @@ export const MachineTab = () => {
           </div>
           <div className="flex flex-col justify-center items-center w-1/2">
             <NumberInput
-              value={storedPlotSnap.jogDistance}
+              value={appSnap.jogDistance}
               onChange={handleJogDistanceChange}
               disabled={previewIsLoading || controlIsLoading}
               className="w-32 mb-4"
               label="Jog Distance"
             />
             <NumberInput
-              value={storedPlotSnap.jogSpeed}
+              value={appSnap.jogSpeed}
               onChange={handleJogSpeedChange}
               disabled={previewIsLoading || controlIsLoading}
               className="w-32"
@@ -411,7 +411,7 @@ export const MachineTab = () => {
           className="flex-1"
           variant="dangerOutlined"
           onClick={eStop}
-          disabled={!serial.isConnected}
+          disabled={!plotter.isConnected}
         >
           Stop
         </Button>

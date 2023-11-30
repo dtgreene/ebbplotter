@@ -2,7 +2,7 @@ import { ReadlineParser, SerialPort } from 'serialport';
 import logger from 'loglevel';
 
 import { getSMCommand, getLMCommand } from './movement.js';
-import { blue, orange } from './utils.js';
+import { blue } from './utils.js';
 
 const SERIAL_PRODUCT_ID = 'fd92';
 const SERIAL_MANUFACTURER = 'schmalzhaus';
@@ -59,11 +59,8 @@ export class EBB {
         { path, baudRate: SERIAL_BAUD_RATE },
         (error) => {
           if (!error) {
-            // Flush the port initially to try and clear any garbage data
-            this.port.flush(() => {
-              this.isConnected = true;
-              resolve();
-            });
+            this.isConnected = true;
+            resolve();
           } else {
             reject(error);
           }
@@ -71,26 +68,25 @@ export class EBB {
       );
 
       // Listen for parsed data
-      this.lineParser.on('data', this._handleSerialData);
+      this.lineParser.on('data', this.onSerialData);
       // Pipe incoming data to the line parser
       this.port.pipe(this.lineParser);
       // Listen for close event
-      this.port.once('close', this._handlePortClose);
+      this.port.once('close', this.onPortClose);
       this.onDisconnect = onDisconnect;
     });
   };
   disconnect = async () => {
     if (!this.isConnected) return;
+    if (this.port && !this.port.isOpen) return;
 
     return new Promise((resolve, reject) => {
-      this.port.flush(() => {
-        this.port.close((error) => {
-          if (!error) {
-            resolve();
-          } else {
-            reject(error);
-          }
-        });
+      this.port.close((error) => {
+        if (!error) {
+          resolve();
+        } else {
+          reject(error);
+        }
       });
     });
   };
@@ -110,7 +106,8 @@ export class EBB {
 
       return { mode1, mode2 };
     } catch (error) {
-      throw new Error(`Query motor modes failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : error;
+      throw new Error(`Query motor modes failed: ${errorMessage}`);
     }
   };
   queryCurrent = async () => {
@@ -130,7 +127,8 @@ export class EBB {
 
       return { current, voltage };
     } catch (error) {
-      throw new Error(`Query voltage failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : error;
+      throw new Error(`Query voltage failed: ${errorMessage}`);
     }
   };
   queryVersion = async () => {
@@ -151,21 +149,17 @@ export class EBB {
     }
   };
   hasMotorPower = async () => {
-    try {
-      const { voltage } = await this.queryCurrent();
-      return voltage >= MIN_MOTOR_POWER;
-    } catch (error) {
-      logger.warn(orange(`Motor voltage check failed: ${error.message}`));
-      return false;
-    }
+    const { voltage } = await this.queryCurrent();
+
+    return voltage >= MIN_MOTOR_POWER;
   };
-  setupServo = async (minPosition, maxPosition, rate) => {
-    // https://evil-mad.github.io/EggBot/ebb.html#SC
-    // versions: all
-    await this.write(`SC,10,${rate}`);
-    await this.write(`SC,4,${minPosition}`);
-    await this.write(`SC,5,${maxPosition}`);
-  };
+  // setupServo = async (minPosition, maxPosition, rate) => {
+  //   // https://evil-mad.github.io/EggBot/ebb.html#SC
+  //   // versions: all
+  //   await this.write(`SC,10,${rate}`);
+  //   await this.write(`SC,4,${minPosition}`);
+  //   await this.write(`SC,5,${maxPosition}`);
+  // };
   enableMotors = async (stepMode) => {
     // https://evil-mad.github.io/EggBot/ebb.html#EM
     // versions: all
@@ -277,10 +271,14 @@ export class EBB {
 
     return new Promise((resolve, reject) => {
       const writeTimeout = setTimeout(() => {
+        this.responseHandler = null;
+
         reject('Write timed out');
       }, WRITE_TIMEOUT);
 
       const readTimeout = setTimeout(() => {
+        this.responseHandler = null;
+
         reject('Read timed out');
       }, READ_TIMEOUT);
 
@@ -295,12 +293,12 @@ export class EBB {
       this.port.drain(() => clearTimeout(writeTimeout));
     });
   };
-  _handlePortClose = () => {
+  onPortClose = () => {
     this.isConnected = false;
     this.responseHandler = null;
 
     // Remove data listener
-    this.lineParser.off('data', this._handleSerialData);
+    this.lineParser.off('data', this.onSerialData);
     // Detach the pipe
     this.port.unpipe(this.lineParser);
 
@@ -308,7 +306,7 @@ export class EBB {
       this.onDisconnect();
     }
   };
-  _handleSerialData = (chunk) => {
+  onSerialData = (chunk) => {
     const message = chunk.toString().trim();
 
     logger.debug(blue(`Received message: ${message}`));

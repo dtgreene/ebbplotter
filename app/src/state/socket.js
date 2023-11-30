@@ -3,9 +3,12 @@ import { proxy } from 'valtio';
 let socket = null;
 
 export const socketState = proxy({
-  isConnected: false,
-  serial: {
+  socket: {
     isConnected: false,
+  },
+  plotter: {
+    isConnected: false,
+    isPlotting: false,
   },
 });
 
@@ -37,7 +40,7 @@ export function cleanupSocket() {
 export function createSocket() {
   cleanupSocket();
 
-  socketState.isConnected = false;
+  socketState.socket.isConnected = false;
 
   socket = new WebSocket('ws://localhost:8080/socket');
   socket.addEventListener('close', handleClose, false);
@@ -46,13 +49,13 @@ export function createSocket() {
 }
 
 function handleClose() {
-  socketState.isConnected = false;
-  socketState.serial.isConnected = false;
+  socketState.socket.isConnected = false;
+  socketState.plotter.isConnected = false;
   setTimeout(createSocket, 2000);
 }
 
 function handleOpen() {
-  socketState.isConnected = true;
+  socketState.socket.isConnected = true;
 }
 
 function handleMessage(event) {
@@ -61,9 +64,7 @@ function handleMessage(event) {
 
     switch (data.type) {
       case 'status': {
-        const { serial } = data.payload;
-        socketState.serial.isConnected = serial.isConnected;
-
+        socketState.plotter = data.payload;
         break;
       }
       default: {

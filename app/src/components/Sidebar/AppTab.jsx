@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSnapshot } from 'valtio';
 
-import { storedPlotState, toggleDarkMode } from 'src/state/storedPlot';
+import { appState, toggleDarkMode } from 'src/state/app';
 import { plotState } from 'src/state/plot';
 import { CheckBox } from '../CheckBox';
 import { FieldLabel } from '../FieldLabel';
@@ -13,16 +13,16 @@ const handleEraseClick = () => {
 };
 
 export const AppTab = () => {
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
 
-  const { isLoading } = plotSnap.preview;
+  const { isLoading } = plotSnap.previewRequest;
 
   return (
     <>
       <div className="flex items-center gap-2 mb-4">
         <CheckBox
-          value={storedPlotSnap.dark}
+          value={appSnap.dark}
           onChange={toggleDarkMode}
           disabled={isLoading}
         />

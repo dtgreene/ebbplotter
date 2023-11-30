@@ -1,7 +1,7 @@
 import React from 'react';
 import { proxy, useSnapshot } from 'valtio';
 
-import { storedPlotState } from 'src/state/storedPlot';
+import { appState } from 'src/state/app';
 import { useModal } from 'src/hooks/useModal';
 import { postRequest } from 'src/utils';
 import { BaseModal } from '../BaseModal';
@@ -15,7 +15,7 @@ const modalState = proxy({
   timeoutId: null,
 });
 const state = proxy({
-  request: {
+  getStepsPerMM: {
     isLoading: false,
     isError: false,
     data: null,
@@ -35,20 +35,20 @@ export const stepModeOptions = [
 
 export const StepsCalculatorModal = ({ active, onClose }) => {
   const { visible, mounted } = useModal(modalState, active);
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const stateSnap = useSnapshot(state);
 
   if (!mounted) return null;
 
-  const { isLoading, data } = stateSnap.request;
-  const { stepper } = storedPlotSnap.machine;
+  const { isLoading, data } = stateSnap.getStepsPerMM;
+  const { stepper } = appSnap.machine;
 
   const handleStepAngleChange = (event) => {
     state.stepAngle = event.target.value;
   };
 
   const handleStepModeChange = (event) => {
-    storedPlotState.machine.stepper.stepMode = event.target.value;
+    appState.machine.stepper.stepMode = event.target.value;
   };
 
   const handleBeltPitchChange = (event) => {
@@ -60,9 +60,9 @@ export const StepsCalculatorModal = ({ active, onClose }) => {
   };
 
   const handleCalculateClick = async () => {
-    if (state.request.isLoading) return;
+    if (state.getStepsPerMM.isLoading) return;
 
-    state.request.isLoading = true;
+    state.getStepsPerMM.isLoading = true;
 
     const { stepMode } = stepper;
     const { stepAngle, beltPitch, pulleyToothCount } = state;
@@ -73,11 +73,11 @@ export const StepsCalculatorModal = ({ active, onClose }) => {
       pulleyToothCount: Number(pulleyToothCount),
     });
 
-    postRequest(state.request, '/steps-per-mm', body);
+    postRequest(state.getStepsPerMM, { path: '/steps-per-mm', body });
   };
 
   const handleUseValueClick = () => {
-    storedPlotState.machine.stepper.stepsPerMM = data.stepsPerMM;
+    appState.machine.stepper.stepsPerMM = data.stepsPerMM;
     onClose();
   };
 

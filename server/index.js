@@ -7,7 +7,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 
 import routes from './routes.js';
-import { PlotInterface } from './plot.js';
+import { PlotterInterface } from './plotter.js';
 
 const port = 8080;
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -32,7 +32,7 @@ function main() {
   fastify.register(fastifyCors);
 
   // Decorate the plot interface
-  fastify.decorate('plot', new PlotInterface());
+  fastify.decorate('plotter', new PlotterInterface());
   // Routes
   fastify.register(routes);
 
@@ -42,11 +42,12 @@ function main() {
 
   fastify.listen({ port }, (error) => {
     if (!error) {
-      fastify.plot.serialConnect();
+      fastify.plotter.serialConnect();
     } else {
-      console.log(error);
+      console.error(error);
     }
   });
 }
 
 main();
+

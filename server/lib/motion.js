@@ -28,16 +28,11 @@ class MotionSegment {
 }
 
 export class MotionPlanner {
-  constructor(
-    machine,
-    pathList,
-    startIndex = 0,
-    startPosition = { x: 0, y: 0 },
-  ) {
+  constructor(pathList, machine) {
     this.machine = machine;
     this.pathList = pathList;
-    this.index = startIndex;
-    this.position = startPosition;
+    this.index = 0;
+    this.position = { x: 0, y: 0 };
 
     const { stepsPerMM } = this.machine.stepper;
     this.minCommandDistance = 1 / stepsPerMM;

@@ -1,8 +1,10 @@
 import { proxy, subscribe } from 'valtio';
 
+import { createAlert, AlertTypes } from '../state/alert';
+
 const STORAGE_VERSION = 0.1;
 
-export async function postRequest(state, path, body) {
+export async function postRequest(state, { path, body }, onError) {
   state.isLoading = true;
 
   try {
@@ -25,8 +27,14 @@ export async function postRequest(state, path, body) {
     state.isError = false;
     state.data = json;
   } catch (error) {
+    createAlert({
+      title: `${path} request failed`,
+      message: error.message,
+      type: AlertTypes.ERROR,
+    });
+    console.error(error.message);
+
     state.isError = true;
-    console.error(`${path} request failed: ${error.message}`);
   } finally {
     state.isLoading = false;
   }

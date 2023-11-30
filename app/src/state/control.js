@@ -1,10 +1,10 @@
 import { proxy } from 'valtio';
 
-import { storedPlotState } from './storedPlot';
+import { appState } from './app';
 import { postRequest } from '../utils';
 
 export const controlState = proxy({
-  request: {
+  controlRequest: {
     isLoading: false,
     isError: false,
     data: null,
@@ -12,9 +12,9 @@ export const controlState = proxy({
 });
 
 export function setPen(heightPercent) {
-  if (controlState.request.isLoading) return;
+  if (controlState.controlRequest.isLoading) return;
 
-  const { servo } = storedPlotState.machine;
+  const { servo } = appState.machine;
   const body = JSON.stringify({
     minPosition: Number(servo.minPosition),
     maxPosition: Number(servo.maxPosition),
@@ -22,27 +22,30 @@ export function setPen(heightPercent) {
     rate: Number(servo.rate),
     duration: Number(servo.duration),
   });
-  postRequest(controlState.request, '/control/set-pen', body);
+  postRequest(controlState.controlRequest, { path: '/control/set-pen', body });
 }
 
 export function enableMotors() {
-  if (controlState.request.isLoading) return;
+  if (controlState.controlRequest.isLoading) return;
 
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   const body = JSON.stringify({ stepMode: stepper.stepMode });
-  postRequest(controlState.request, '/control/enable-motors', body);
+  postRequest(controlState.controlRequest, {
+    path: '/control/enable-motors',
+    body,
+  });
 }
 
 export function disableMotors() {
-  if (controlState.request.isLoading) return;
+  if (controlState.controlRequest.isLoading) return;
 
-  postRequest(controlState.request, '/control/disable-motors');
+  postRequest(controlState.controlRequest, { path: '/control/disable-motors' });
 }
 
 export function jog(x, y) {
-  if (controlState.request.isLoading) return;
+  if (controlState.controlRequest.isLoading) return;
 
-  const { stepper } = storedPlotState.machine;
+  const { stepper } = appState.machine;
   const { stepsPerMM, stepMode, invertX, invertY, coreXY } = stepper;
 
   const body = JSON.stringify({
@@ -55,17 +58,17 @@ export function jog(x, y) {
       invertY,
       coreXY,
     },
-    speed: Number(storedPlotState.jogSpeed),
+    speed: Number(appState.jogSpeed),
   });
-  postRequest(controlState.request, '/control/jog', body);
+  postRequest(controlState.controlRequest, { path: '/control/jog', body });
 }
 
 export function rebootBoard() {
-  if (controlState.request.isLoading) return;
+  if (controlState.controlRequest.isLoading) return;
 
-  postRequest(controlState.request, '/control/reboot');
+  postRequest(controlState.controlRequest, { path: '/control/reboot' });
 }
 
 export function eStop() {
-  postRequest(controlState.request, '/control/stop');
+  postRequest(controlState.controlRequest, { path: '/control/stop' });
 }

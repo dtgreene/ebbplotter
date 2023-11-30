@@ -1,22 +1,22 @@
 import React from 'react';
 import { useSnapshot } from 'valtio';
 
-import { storedPlotState } from 'src/state/storedPlot';
+import { appState } from 'src/state/app';
 import { plotState } from 'src/state/plot';
 
 const dashStyle = { strokeDasharray: '5 5' };
 
 export const PreviewSVG = () => {
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
 
-  const { data } = plotSnap.preview;
+  const { data } = plotSnap.previewRequest;
 
   if (!data) {
     return <div>placeholder</div>;
   }
 
-  const { display } = storedPlotSnap;
+  const { display } = appSnap;
   const { dimensions, preview } = data;
   const paperViewBox = `0 0 ${dimensions.width || 0} ${dimensions.height || 0}`;
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { useSnapshot } from 'valtio';
 import clsx from 'clsx';
 
-import { storedPlotState } from 'src/state/storedPlot';
+import { appState } from 'src/state/app';
 import { plotState } from 'src/state/plot';
 import { NumberInput } from '../NumberInput';
 import { Select } from '../Select';
@@ -24,19 +24,19 @@ const sizeOptions = [
 const customSizeOption = sizeOptions[4];
 
 const handleWidthChange = (event) => {
-  const { dimensions } = storedPlotState;
+  const { dimensions } = appState;
   dimensions.width = event.target.value;
   dimensions.preset = customSizeOption.value;
 };
 
 const handleHeightChange = (event) => {
-  const { dimensions } = storedPlotState;
+  const { dimensions } = appState;
   dimensions.height = event.target.value;
   dimensions.preset = customSizeOption.value;
 };
 
 const handleDimensionSwapClick = () => {
-  const { dimensions } = storedPlotState;
+  const { dimensions } = appState;
   const width = dimensions.width;
 
   dimensions.width = dimensions.height;
@@ -46,7 +46,7 @@ const handleDimensionSwapClick = () => {
 
 const handleSizeChange = (event) => {
   const { value } = event.target;
-  const { dimensions } = storedPlotState;
+  const { dimensions } = appState;
 
   const option = sizeOptions.find((option) => option.value === value);
 
@@ -68,63 +68,63 @@ const handleExcludeIdChange = (id) => {
 };
 
 const handleTopMarginChange = ({ target }) => {
-  const { margins } = storedPlotState;
+  const { margins } = appState;
   margins.top = target.value;
 };
 
 const handleRightMarginChange = ({ target }) => {
-  const { margins } = storedPlotState;
+  const { margins } = appState;
   margins.right = target.value;
 };
 
 const handleBottomMarginChange = ({ target }) => {
-  const { margins } = storedPlotState;
+  const { margins } = appState;
   margins.bottom = target.value;
 };
 
 const handleLeftMarginChange = ({ target }) => {
-  const { margins } = storedPlotState;
+  const { margins } = appState;
   margins.left = target.value;
 };
 
 const handleAlignmentChange = (id) => {
-  storedPlotState.alignment = id;
+  appState.alignment = id;
 };
 
 const handleRotationChange = ({ target }) => {
-  storedPlotState.rotation = target.value;
+  appState.rotation = target.value;
 };
 
 const handleUseBoundingBoxChange = () => {
-  storedPlotState.useBoundingBox = !storedPlotState.useBoundingBox;
+  appState.useBoundingBox = !appState.useBoundingBox;
 };
 
 const handleOptimizationChange = (key) => {
-  storedPlotState.optimizations[key] = !storedPlotState.optimizations[key];
+  appState.optimizations[key] = !appState.optimizations[key];
 };
 
 const handleMergeDistanceChange = (event) => {
-  storedPlotState.optimizations.mergeDistance = event.target.value;
+  appState.optimizations.mergeDistance = event.target.value;
 };
 
 const handleRemoveShortDistanceChange = (event) => {
-  storedPlotState.optimizations.removeShortDistance = event.target.value;
+  appState.optimizations.removeShortDistance = event.target.value;
 };
 
 const handleRandomizeToleranceChange = (event) => {
-  storedPlotState.optimizations.randomizeStartTolerance = event.target.value;
+  appState.optimizations.randomizeStartTolerance = event.target.value;
 };
 
 const handleDisplayChange = (key) => {
-  storedPlotState.display[key] = !storedPlotState.display[key];
+  appState.display[key] = !appState.display[key];
 };
 
 export const LayoutTab = () => {
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
 
-  const { dimensions, optimizations, display } = storedPlotSnap;
-  const { data, isLoading } = plotSnap.preview;
+  const { dimensions, optimizations, display } = appSnap;
+  const { data, isLoading } = plotSnap.previewRequest;
   const previewGroupIds = data?.groupIds ?? [];
 
   return (
@@ -196,14 +196,14 @@ export const LayoutTab = () => {
       <SidebarSection label="MARGINS">
         <div className="flex gap-4">
           <NumberInput
-            value={storedPlotSnap.margins.top}
+            value={appSnap.margins.top}
             onChange={handleTopMarginChange}
             disabled={isLoading}
             label="Top"
             units="mm"
           />
           <NumberInput
-            value={storedPlotSnap.margins.right}
+            value={appSnap.margins.right}
             onChange={handleRightMarginChange}
             disabled={isLoading}
             label="Right"
@@ -212,14 +212,14 @@ export const LayoutTab = () => {
         </div>
         <div className="flex gap-4">
           <NumberInput
-            value={storedPlotSnap.margins.bottom}
+            value={appSnap.margins.bottom}
             onChange={handleBottomMarginChange}
             disabled={isLoading}
             label="Bottom"
             units="mm"
           />
           <NumberInput
-            value={storedPlotSnap.margins.left}
+            value={appSnap.margins.left}
             onChange={handleLeftMarginChange}
             disabled={isLoading}
             label="Left"
@@ -229,7 +229,7 @@ export const LayoutTab = () => {
       </SidebarSection>
       <SidebarSection label="TRANSFORM">
         <SlideSelect
-          value={storedPlotSnap.alignment}
+          value={appSnap.alignment}
           onChange={handleAlignmentChange}
           disabled={isLoading}
           options={alignmentOptions}
@@ -237,7 +237,7 @@ export const LayoutTab = () => {
         />
         <div className="flex gap-4">
           <NumberInput
-            value={storedPlotSnap.rotation}
+            value={appSnap.rotation}
             onChange={handleRotationChange}
             disabled={isLoading}
             className="flex-1"
@@ -248,7 +248,7 @@ export const LayoutTab = () => {
           />
           <div className="flex items-center gap-2 flex-1 mt-5">
             <CheckBox
-              value={storedPlotSnap.useBoundingBox}
+              value={appSnap.useBoundingBox}
               onChange={handleUseBoundingBoxChange}
               disabled={isLoading}
             />
@@ -293,7 +293,7 @@ export const LayoutTab = () => {
             step="0.1"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 my-1">
           <CheckBox
             value={optimizations.reorder}
             onChange={() => handleOptimizationChange('reorder')}

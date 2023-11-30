@@ -1,5 +1,6 @@
 import { getStepsPerMM, getServoPosition } from './lib/ebb.js';
 import { prepareSVG } from './lib/svg/prepare.js';
+import { MotionPlanner } from './lib/motion.js';
 
 const layoutSchema = {
   properties: {
@@ -31,7 +32,7 @@ const layoutSchema = {
       },
     },
     alignment: {
-      type: 'uint16',
+      type: 'uint32',
     },
     rotation: {
       type: 'float32',
@@ -73,28 +74,6 @@ const layoutSchema = {
 };
 const stepModeSchema = { enum: ['1', '2', '3', '4', '5'] };
 
-// stepper: {
-//   upSpeed: '300',
-//   downSpeed: '200',
-//   stepsPerMM: '40',
-//   stepMode: '2',
-//   invertX: false,
-//   invertY: false,
-//   coreXY: false,
-// },
-// planning: {
-//   cornerFactor: '0.001',
-//   acceleration: '1200',
-// },
-// servo: {
-//   minPosition: '10000',
-//   maxPosition: '17000',
-//   upPercent: '60',
-//   downPercent: '20',
-//   duration: '300',
-//   rate: '0',
-// },
-
 const machineSchema = {
   properties: {
     stepper: {
@@ -133,19 +112,19 @@ const machineSchema = {
     servo: {
       properties: {
         minPosition: {
-          type: 'float32',
+          type: 'uint32',
         },
         maxPosition: {
-          type: 'float32',
+          type: 'uint32',
         },
         upPercent: {
-          type: 'float32',
+          type: 'uint32',
         },
         downPercent: {
-          type: 'float32',
+          type: 'uint32',
         },
         duration: {
-          type: 'float32',
+          type: 'uint32',
         },
         rate: {
           type: 'float32',
@@ -169,7 +148,7 @@ export default (fastify, options, done) => {
       },
     },
     async (request, reply) => {
-      const { ebb } = fastify;
+      const { ebb } = fastify.plotter;
 
       if (!ebb.isConnected) {
         return replyDisconnected(reply);
@@ -178,7 +157,7 @@ export default (fastify, options, done) => {
         return replyLowPower(reply);
       }
 
-      const { layout } = request.body;
+      const { layout, machine } = request.body;
 
       if (layout.dimensions.width === 0 || layout.dimensions.height === 0) {
         return reply
@@ -197,6 +176,9 @@ export default (fastify, options, done) => {
         const { pathList } = prepareSVG(data, options);
 
         // motion plan
+        // fastify.plotter.begin(new MotionPlanner(pathList, machine));
+
+        return JSON.stringify({ message: 'ok' });
       } catch (error) {
         request.log.error(error.message);
         return reply
@@ -212,17 +194,17 @@ export default (fastify, options, done) => {
       schema: {
         body: {
           properties: {
-            rate: { type: 'uint16' },
-            heightPercent: { type: 'uint16' },
-            minPosition: { type: 'uint16' },
-            maxPosition: { type: 'uint16' },
-            duration: { type: 'uint16' },
+            rate: { type: 'uint32' },
+            heightPercent: { type: 'uint32' },
+            minPosition: { type: 'uint32' },
+            maxPosition: { type: 'uint32' },
+            duration: { type: 'uint32' },
           },
         },
       },
     },
     async (request, reply) => {
-      const { ebb } = fastify.plot;
+      const { ebb } = fastify.plotter;
 
       if (!ebb.isConnected) {
         return replyDisconnected(reply);
@@ -264,7 +246,7 @@ export default (fastify, options, done) => {
       },
     },
     async (request, reply) => {
-      const { ebb } = fastify.plot;
+      const { ebb } = fastify.plotter;
 
       if (!ebb.isConnected) {
         return replyDisconnected(reply);
@@ -289,7 +271,7 @@ export default (fastify, options, done) => {
   );
 
   fastify.post('/control/disable-motors', async (request, reply) => {
-    const { ebb } = fastify.plot;
+    const { ebb } = fastify.plotter;
 
     if (!ebb.isConnected) {
       return replyDisconnected(reply);
@@ -306,7 +288,7 @@ export default (fastify, options, done) => {
   });
 
   fastify.post('/control/reboot', async (request, reply) => {
-    const { ebb } = fastify.plot;
+    const { ebb } = fastify.plotter;
 
     if (!ebb.isConnected) {
       return replyDisconnected(reply);
@@ -333,7 +315,7 @@ export default (fastify, options, done) => {
             stepper: {
               properties: {
                 stepsPerMM: {
-                  type: 'uint16',
+                  type: 'uint32',
                 },
                 stepMode: stepModeSchema,
                 invertX: {
@@ -353,7 +335,7 @@ export default (fastify, options, done) => {
       },
     },
     async (request, reply) => {
-      const { ebb } = fastify.plot;
+      const { ebb } = fastify.plotter;
 
       if (!ebb.isConnected) {
         return replyDisconnected(reply);
@@ -383,7 +365,7 @@ export default (fastify, options, done) => {
   );
 
   fastify.post('/control/stop', async (request, reply) => {
-    const { ebb } = fastify.plot;
+    const { ebb } = fastify.plotter;
 
     if (!ebb.isConnected) {
       return replyDisconnected(reply);
@@ -445,7 +427,7 @@ export default (fastify, options, done) => {
         body: {
           properties: {
             stepMode: {
-              type: 'uint16',
+              type: 'uint32',
             },
             stepAngle: {
               type: 'float32',
@@ -454,7 +436,7 @@ export default (fastify, options, done) => {
               type: 'float32',
             },
             pulleyToothCount: {
-              type: 'uint16',
+              type: 'uint32',
             },
           },
         },
@@ -473,7 +455,7 @@ export default (fastify, options, done) => {
   );
 
   fastify.get('/socket', { websocket: true }, (connection) => {
-    fastify.plot.addSocket(connection);
+    fastify.plotter.addConnection(connection);
   });
 
   done();

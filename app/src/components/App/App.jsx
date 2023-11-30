@@ -4,8 +4,14 @@ import { useSnapshot, subscribe } from 'valtio';
 import clsx from 'clsx';
 
 import { createAlert, AlertTypes } from 'src/state/alert';
-import { plotState, debouncedGetPreview, getPreview } from 'src/state/plot';
-import { storedPlotState } from 'src/state/storedPlot';
+import {
+  plotState,
+  debouncedGetPreview,
+  resetPreview,
+  getPreview,
+  startPlot,
+} from 'src/state/plot';
+import { appState } from 'src/state/app';
 import { socketState } from 'src/state/socket';
 import { createSocket, cleanupSocket } from 'src/state/socket';
 import { Button, ButtonGroup } from '../Button';
@@ -21,26 +27,26 @@ const acceptedFiles = { 'image/svg+xml': ['.svg'] };
 const reader = new FileReader();
 
 export const App = () => {
-  const storedPlotSnap = useSnapshot(storedPlotState);
+  const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
   const socketSnap = useSnapshot(socketState);
 
   useEffect(() => {
-    const unsubPlotStored = subscribe(storedPlotState, debouncedGetPreview);
+    const unsubApp = subscribe(appState, debouncedGetPreview);
     const unsubPlot = subscribe(plotState.excludeIds, debouncedGetPreview);
 
     getPreview();
     createSocket();
 
     return () => {
-      unsubPlotStored();
+      unsubApp();
       unsubPlot();
       cleanupSocket();
     };
   }, []);
 
   const onDrop = useCallback(([file]) => {
-    if (plotState.preview.isLoading) return;
+    if (plotState.previewRequest.isLoading) return;
 
     if (file) {
       const handleReadFail = () => {
@@ -52,7 +58,7 @@ export const App = () => {
       reader.onerror = handleReadFail;
       reader.onabort = handleReadFail;
       reader.onload = () => {
-        storedPlotState.currentFile = {
+        appState.currentFile = {
           name: file.name,
           data: reader.result,
         };
@@ -73,15 +79,21 @@ export const App = () => {
   });
 
   const handleDeleteFileClick = () => {
-    plotState.reset();
-    storedPlotState.currentFile = null;
+    resetPreview();
+    appState.currentFile = null;
   };
 
-  const { currentFile } = storedPlotSnap;
-  const { isLoading } = plotSnap.preview;
-  const { serial } = socketSnap;
+  const { isLoading: previewIsLoading } = plotSnap.previewRequest;
+  const { isLoading: plotIsLoading } = plotSnap.startPlotRequest;
 
-  const plotIsDisabled = isLoading || !serial.isConnected || !currentFile;
+  const { currentFile } = appSnap;
+  const { plotter } = socketSnap;
+
+  const plotIsDisabled =
+    previewIsLoading ||
+    plotIsLoading ||
+    !plotter.isConnected ||
+    !currentFile; /* || isPlotting */
 
   return (
     <div className="w-full h-screen" {...getRootProps()}>
@@ -95,8 +107,8 @@ export const App = () => {
               <span>Serial Status:</span>
               <span
                 className={clsx('w-3 h-3 rounded-full shadow', {
-                  'bg-red-500 shadow-red-500': !serial.isConnected,
-                  'bg-green-500 shadow-green-500': serial.isConnected,
+                  'bg-red-500 shadow-red-500': !plotter.isConnected,
+                  'bg-green-500 shadow-green-500': plotter.isConnected,
                 })}
               ></span>
             </div>
@@ -113,7 +125,7 @@ export const App = () => {
                   variant="primaryOutlined"
                   className="flex items-center gap-2"
                   onClick={openFile}
-                  disabled={isLoading}
+                  disabled={previewIsLoading}
                 >
                   <FolderOpenIcon />
                   <span>Load File</span>
@@ -121,7 +133,7 @@ export const App = () => {
                 <Button
                   variant="primaryOutlined"
                   onClick={handleDeleteFileClick}
-                  disabled={isLoading}
+                  disabled={previewIsLoading}
                 >
                   <XMarkIcon />
                 </Button>
@@ -137,7 +149,11 @@ export const App = () => {
               </Button>
             )}
             <ButtonGroup>
-              <Button className="px-8" disabled={plotIsDisabled}>
+              <Button
+                className="px-8"
+                disabled={plotIsDisabled}
+                onClick={startPlot}
+              >
                 Plot
               </Button>
               <Button>
@@ -146,7 +162,7 @@ export const App = () => {
             </ButtonGroup>
           </div>
         </div>
-        {!isLoading && isDragActive && (
+        {!previewIsLoading && isDragActive && (
           <div className="absolute top-0 right-0 bottom-0 left-0 bg-zinc-600/75 flex justify-center items-center">
             <div className="text-zinc-600 dark:text-zinc-200 text-4xl">
               Drop SVG here
@@ -157,7 +173,7 @@ export const App = () => {
           className={clsx(
             'absolute top-0 right-0 bottom-0 left-0 flex justify-center items-center backdrop-blur transition-opacity duration-300 z-20 pointer-events-none opacity-0',
             {
-              'opacity-100 pointer-events-auto': isLoading,
+              'opacity-100 pointer-events-auto': previewIsLoading,
             },
           )}
         >

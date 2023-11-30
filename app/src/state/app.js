@@ -1,6 +1,6 @@
 import { createStorageProxy } from 'src/utils';
 
-export const storedPlotState = createStorageProxy('ebbplotter', {
+export const appState = createStorageProxy('ebbplotter', {
   currentFile: null,
   dimensions: { width: '420', height: '297', preset: '0' },
   margins: {
@@ -58,7 +58,7 @@ export const storedPlotState = createStorageProxy('ebbplotter', {
 });
 
 export function setDarkClass() {
-  if (storedPlotState.dark) {
+  if (appState.dark) {
     document.body.parentElement.className = 'dark';
   } else {
     document.body.parentElement.className = '';
@@ -66,10 +66,10 @@ export function setDarkClass() {
 }
 
 export function toggleDarkMode() {
-  storedPlotState.dark = !storedPlotState.dark;
+  appState.dark = !appState.dark;
 
   setDarkClass();
 }
 
 // Initially sync the dark state
-setDarkClass(storedPlotState.dark);
+setDarkClass(appState.dark);
