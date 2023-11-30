@@ -4,7 +4,7 @@ const ebb = new EBB();
 
 async function main() {
   await ebb.connect();
-  const { mode1, mode2 } = await ebb.queryMotorModes();
+  await ebb.queryMotorModes();
 
   await ebb.disconnect();
 }

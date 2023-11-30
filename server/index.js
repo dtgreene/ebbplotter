@@ -6,12 +6,8 @@ import fastifyWebSocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 
-import { PlotInterface } from './PlotInterface.js';
-
-import preview from './routes/preview.js';
-import stepsPerMM from './routes/stepsPerMM.js';
-import control from './routes/control.js';
-import socket from './routes/socket.js';
+import routes from './routes.js';
+import { PlotInterface } from './plot.js';
 
 const port = 8080;
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -26,7 +22,6 @@ const fastify = Fastify({
     },
   },
 });
-const plot = new PlotInterface();
 
 function main() {
   fastify.register(fastifyWebSocket);
@@ -36,14 +31,10 @@ function main() {
   });
   fastify.register(fastifyCors);
 
-  // Decorate
-  fastify.decorate('plot', plot);
-
+  // Decorate the plot interface
+  fastify.decorate('plot', new PlotInterface());
   // Routes
-  fastify.register(preview);
-  fastify.register(stepsPerMM);
-  fastify.register(control);
-  fastify.register(socket);
+  fastify.register(routes);
 
   fastify.get('/', (request, reply) => {
     reply.sendFile('index.html');
@@ -51,7 +42,9 @@ function main() {
 
   fastify.listen({ port }, (error) => {
     if (!error) {
-      plot.serialConnect();
+      fastify.plot.serialConnect();
+    } else {
+      console.log(error);
     }
   });
 }

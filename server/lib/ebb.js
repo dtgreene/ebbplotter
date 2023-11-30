@@ -2,7 +2,7 @@ import { ReadlineParser, SerialPort } from 'serialport';
 import logger from 'loglevel';
 
 import { getSMCommand, getLMCommand } from './movement.js';
-import { blue } from './utils.js';
+import { blue, orange } from './utils.js';
 
 const SERIAL_PRODUCT_ID = 'fd92';
 const SERIAL_MANUFACTURER = 'schmalzhaus';
@@ -12,8 +12,7 @@ const WRITE_TIMEOUT = 1_000;
 const READ_TIMEOUT = 1_000;
 const MESSAGE_ACK = 'OK';
 const PORT_PROPS = ['productId', 'vendorId', 'manufacturer'];
-const VOLTAGE_EXP = new RegExp(/(\d{4})/, 'g');
-const MOTOR_STATES_EXP = new RegExp(/(\d{1})/, 'g');
+const MIN_MOTOR_POWER = 8;
 const MODE_TO_STEPS = {
   1: 16,
   2: 8,
@@ -98,9 +97,9 @@ export class EBB {
   queryMotorModes = async () => {
     try {
       const response = await this.writeAndRead('QE');
-      const matches = Array.from(response.matchAll(MOTOR_STATES_EXP));
+      const matches = Array.from(response.matchAll(/\d+/g));
       const value1 = matches[0][0];
-      const value2 = matches[1][0];
+      const value2 = matches[0][1];
 
       if (matches.length !== 2) {
         throw new Error('Could not get motor modes');
@@ -119,11 +118,10 @@ export class EBB {
     // versions: v2.2.3 and newer
     try {
       const response = await this.writeAndRead('QC');
-      const matches = Array.from(response.matchAll(VOLTAGE_EXP));
-      const value1 = parseInt(matches[0][0]);
-      const value2 = parseInt(matches[1][0]);
+      const value1 = parseInt(response.slice(0, 4));
+      const value2 = parseInt(response.slice(5, 9));
 
-      if (matches.length !== 2 || isNaN(value1) || isNaN(value2)) {
+      if (isNaN(value1) || isNaN(value2)) {
         throw new Error('Could not get voltage');
       }
 
@@ -150,6 +148,15 @@ export class EBB {
       return matches[0];
     } catch (error) {
       throw new Error(`Query version failed: ${error.message}`);
+    }
+  };
+  hasMotorPower = async () => {
+    try {
+      const { voltage } = await this.queryCurrent();
+      return voltage >= MIN_MOTOR_POWER;
+    } catch (error) {
+      logger.warn(orange(`Motor voltage check failed: ${error.message}`));
+      return false;
     }
   };
   setupServo = async (minPosition, maxPosition, rate) => {
@@ -290,6 +297,7 @@ export class EBB {
   };
   _handlePortClose = () => {
     this.isConnected = false;
+    this.responseHandler = null;
 
     // Remove data listener
     this.lineParser.off('data', this._handleSerialData);

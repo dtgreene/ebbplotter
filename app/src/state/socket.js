@@ -28,6 +28,12 @@ export function cleanupSocket() {
   }
 }
 
+// FireFox exponentially backs off the WebSocket close event by up to 60 seconds
+// resulting in longer auto-connect times if the socket can't connect after a
+// few attempts.
+
+// If this becomes too annoying for FireFox users, a manual timeout will need to
+// be implemented. For now, refreshing the page and/or waiting works.
 export function createSocket() {
   cleanupSocket();
 
@@ -41,6 +47,7 @@ export function createSocket() {
 
 function handleClose() {
   socketState.isConnected = false;
+  socketState.serial.isConnected = false;
   setTimeout(createSocket, 2000);
 }
 

@@ -38,7 +38,6 @@ export const storedPlotState = createStorageProxy('ebbplotter', {
       downSpeed: '200',
       stepsPerMM: '40',
       stepMode: '2',
-      // minCommandDistance: 0.025,
       invertX: false,
       invertY: false,
       coreXY: false,
