@@ -37,14 +37,14 @@ export class MotionPlanner {
     const { stepsPerMM } = this.machine.stepper;
     this.minCommandDistance = 1 / stepsPerMM;
   }
-  next = () => {
+  getNextPlan = () => {
     const path = this.pathList[this.index++];
 
     if (!path) return null;
 
     // TODO: handle single point paths
     if (path.length === 0 || path.length % 2 !== 0) {
-      logger.warn(colors.yellow('Skipping empty path.'));
+      logger.warn(colors.yellow('Invalid path length.'));
     }
 
     let commands = [];
@@ -64,7 +64,7 @@ export class MotionPlanner {
       }
 
       if (prevMotionSegment) {
-        motionSegment.entrySpeed = this.getCornerSpeed(
+        motionSegment.entrySpeed = this._getCornerSpeed(
           prevMotionSegment,
           motionSegment,
           downSpeed,
@@ -77,7 +77,7 @@ export class MotionPlanner {
 
     if (motionSegments.length > 0) {
       // Adjust the speeds to stay within the allowed acceleration
-      this.smoothMotionSpeeds(motionSegments);
+      this._smoothMotionSpeeds(motionSegments);
 
       // Move to the beginning of the first segment
       const firstSegment = motionSegments[0];
@@ -87,7 +87,7 @@ export class MotionPlanner {
         firstSegment.x1,
         firstSegment.y1,
       );
-      const penUpCommands = this.getSegmentCommands(
+      const penUpCommands = this._getSegmentCommands(
         penUpSegment,
         0,
         0,
@@ -110,7 +110,7 @@ export class MotionPlanner {
         const nextEntrySpeed = nextSegment ? nextSegment.entrySpeed : 0;
 
         commands = commands.concat(
-          this.getSegmentCommands(
+          this._getSegmentCommands(
             currentSegment,
             entrySpeed,
             nextEntrySpeed,
@@ -131,7 +131,7 @@ export class MotionPlanner {
 
     return commands;
   };
-  getSegmentCommands = (motionSegment, entrySpeed, exitSpeed, maxSpeed) => {
+  _getSegmentCommands = (motionSegment, entrySpeed, exitSpeed, maxSpeed) => {
     const segmentLength = motionSegment.distance;
     const segmentDirection = motionSegment.direction;
     const { x1, y1, x2, y2 } = motionSegment;
@@ -143,7 +143,7 @@ export class MotionPlanner {
 
     // Check if the speed difference is possible given this distance and
     // acceleration.
-    if (!this.speedsArePossible(entrySpeed, exitSpeed, segmentLength)) {
+    if (!this._speedsArePossible(entrySpeed, exitSpeed, segmentLength)) {
       throw new Error(
         'Cannot get motion commands for segment; speed delta is too great',
       );
@@ -159,7 +159,7 @@ export class MotionPlanner {
       }
     }
 
-    const motionProfile = this.getMotionProfile(
+    const motionProfile = this._getMotionProfile(
       entrySpeed,
       exitSpeed,
       maxSpeed,
@@ -192,7 +192,7 @@ export class MotionPlanner {
 
     return commands;
   };
-  speedsArePossible = (entrySpeed, exitSpeed, distance) => {
+  _speedsArePossible = (entrySpeed, exitSpeed, distance) => {
     if (entrySpeed === exitSpeed) {
       return true;
     }
@@ -203,7 +203,7 @@ export class MotionPlanner {
 
     return acceleration - planner.acceleration < EPSILON;
   };
-  getMotionProfile = (entrySpeed, exitSpeed, maxSpeed, segmentLength) => {
+  _getMotionProfile = (entrySpeed, exitSpeed, maxSpeed, segmentLength) => {
     const { acceleration } = this.machine.planner;
 
     const accelTime = (maxSpeed - entrySpeed) / acceleration;
@@ -225,7 +225,7 @@ export class MotionPlanner {
       const peakDistance =
         (2 * acceleration * segmentLength + exitSpeedSqr - entrySpeedSqr) /
         (4 * acceleration);
-      const peakSpeed = this.getSpeed(entrySpeed, peakDistance, acceleration);
+      const peakSpeed = this._getSpeed(entrySpeed, peakDistance, acceleration);
 
       profile.push([peakDistance, peakSpeed]);
     }
@@ -251,7 +251,7 @@ export class MotionPlanner {
       return result;
     }, []);
   };
-  smoothMotionSpeeds = (motionSegments) => {
+  _smoothMotionSpeeds = (motionSegments) => {
     let index = 0;
     while (index < motionSegments.length) {
       const currentSegment = motionSegments[index];
@@ -259,21 +259,21 @@ export class MotionPlanner {
       const nextEntrySpeed = nextSegment ? nextSegment.entrySpeed : 0;
 
       if (
-        !this.speedsArePossible(
+        !this._speedsArePossible(
           currentSegment.entrySpeed,
           nextEntrySpeed,
           currentSegment.distance,
         )
       ) {
         if (currentSegment.entrySpeed > nextEntrySpeed) {
-          currentSegment.entrySpeed = this.getSpeed(
+          currentSegment.entrySpeed = this._getSpeed(
             nextEntrySpeed,
             currentSegment.distance,
           );
           index--;
           continue;
         } else {
-          nextSegment.entrySpeed = this.getSpeed(
+          nextSegment.entrySpeed = this._getSpeed(
             currentSegment.entrySpeed,
             currentSegment.distance,
           );
@@ -284,11 +284,11 @@ export class MotionPlanner {
       index++;
     }
   };
-  getSpeed = (startSpeed, distance) => {
+  _getSpeed = (startSpeed, distance) => {
     const { acceleration } = this.machine.planner;
     return Math.sqrt(startSpeed * startSpeed + 2 * acceleration * distance);
   };
-  getCornerSpeed = (segmentA, segmentB, maxSpeed) => {
+  _getCornerSpeed = (segmentA, segmentB, maxSpeed) => {
     // https://onehossshay.wordpress.com/2011/09/24/improving_grbl_cornering_algorithm/
     // https://github.com/fogleman/axi/blob/master/axi/planner.py#L152
     const cosine = -dot(segmentA.direction, segmentB.direction);

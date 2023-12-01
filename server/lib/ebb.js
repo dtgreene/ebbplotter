@@ -1,5 +1,6 @@
 import logger from 'loglevel';
 import colors from 'colors/safe.js';
+import { EventEmitter } from 'node:events';
 import { ReadlineParser, SerialPort } from 'serialport';
 
 import { getSMCommand, getLMCommand } from './movement.js';
@@ -27,6 +28,7 @@ const STEPS_TO_MODE = {
   2: 4,
   1: 5,
 };
+const RECONNECT_TIME = 2000;
 
 logger.setDefaultLevel('DEBUG');
 
@@ -43,42 +45,49 @@ export class EBB {
   lineParser = new ReadlineParser({ delimiter: '\r' });
   isConnected = false;
   responseHandler = null;
-  connect = async (onDisconnect) => {
+  emitter = new EventEmitter();
+  shouldReconnect = true;
+  reconnectTimeout = null;
+  connect = async () => {
     if (this.isConnected) return;
 
     // Find the first valid EBB
     const ebbPort = await getEBBPort();
 
-    if (!ebbPort) {
-      throw new Error('No EBB board found');
+    if (ebbPort) {
+      const { path } = ebbPort;
+      return new Promise((resolve, reject) => {
+        this.port = new SerialPort(
+          { path, baudRate: SERIAL_BAUD_RATE },
+          (error) => {
+            if (!error) {
+              this.isConnected = true;
+              resolve();
+
+              this.emitter.emit('connect');
+            } else {
+              reject(error);
+            }
+          },
+        );
+
+        // Listen for parsed data
+        this.lineParser.on('data', this.onSerialData);
+        // Pipe incoming data to the line parser
+        this.port.pipe(this.lineParser);
+        // Listen for close event
+        this.port.once('close', this.onPortClose);
+      });
+    } else {
+      this.reconnect();
+      logger.debug(blue('Could not open serial port; EBB was not found.'));
     }
-
-    const { path } = ebbPort;
-    return new Promise((resolve, reject) => {
-      this.port = new SerialPort(
-        { path, baudRate: SERIAL_BAUD_RATE },
-        (error) => {
-          if (!error) {
-            this.isConnected = true;
-            resolve();
-          } else {
-            reject(error);
-          }
-        },
-      );
-
-      // Listen for parsed data
-      this.lineParser.on('data', this.onSerialData);
-      // Pipe incoming data to the line parser
-      this.port.pipe(this.lineParser);
-      // Listen for close event
-      this.port.once('close', this.onPortClose);
-      this.onDisconnect = onDisconnect;
-    });
   };
   disconnect = async () => {
     if (!this.isConnected) return;
     if (this.port && !this.port.isOpen) return;
+
+    this.shouldReconnect = false;
 
     return new Promise((resolve, reject) => {
       this.port.close((error) => {
@@ -90,12 +99,24 @@ export class EBB {
       });
     });
   };
+  reconnect = () => {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+    this.reconnectTimeout = setTimeout(this.connect, RECONNECT_TIME);
+  };
+  on = (eventName, listener) => {
+    this.emitter.on(eventName, listener);
+  };
+  off = (eventName, listener) => {
+    this.emitter.off(eventName, listener);
+  };
   queryMotorModes = async () => {
     try {
       const response = await this.writeAndRead('QE');
       const matches = Array.from(response.matchAll(/\d+/g));
       const value1 = matches[0][0];
-      const value2 = matches[0][1];
+      const value2 = matches[1][0];
 
       if (matches.length !== 2) {
         throw new Error('Could not get motor modes');
@@ -115,8 +136,8 @@ export class EBB {
     // versions: v2.2.3 and newer
     try {
       const response = await this.writeAndRead('QC');
-      const value1 = parseInt(response.slice(0, 4));
-      const value2 = parseInt(response.slice(5, 9));
+      const value1 = Number(response.slice(0, 4));
+      const value2 = Number(response.slice(5, 9));
 
       if (isNaN(value1) || isNaN(value2)) {
         throw new Error('Could not get voltage');
@@ -299,11 +320,15 @@ export class EBB {
 
     // Remove data listener
     this.lineParser.off('data', this.onSerialData);
-    // Detach the pipe
-    this.port.unpipe(this.lineParser);
 
-    if (this.onDisconnect) {
-      this.onDisconnect();
+    if (this.port) {
+      this.port.unpipe(this.lineParser);
+    }
+
+    this.emitter.emit('disconnect');
+
+    if (this.shouldReconnect) {
+      this.reconnect();
     }
   };
   onSerialData = (chunk) => {

@@ -1,31 +1,32 @@
 import { nanoid } from 'nanoid';
+import { EventEmitter } from 'node:events';
+
 import { EBB } from './lib/ebb.js';
+
+const emitter = new EventEmitter();
 
 export class PlotterInterface {
   isPlotting = false;
   connections = [];
   constructor() {
     this.ebb = new EBB();
-
-    this.serialConnect();
+    this.ebb.on('connect', this.onSerialConnectChange);
+    this.ebb.on('disconnect', this.onSerialConnectChange);
   }
-  serialConnect = async () => {
-    try {
-      await this.ebb.connect(this.onSerialDisconnect);
-      this.onSerialStatusChange();
-    } catch {
-      this.onSerialDisconnect();
-    }
+  serialConnect = () => {
+    this.ebb.connect();
   };
-  onSerialDisconnect = () => {
-    if (this.autoConnect) {
-      setTimeout(this.serialConnect, 2000);
-    }
-
-    this.onSerialStatusChange();
-  };
-  onSerialStatusChange = () => {
+  onSerialConnectChange = () => {
     this.broadcast(this.getStatusMessage());
+  };
+  getStatusMessage = () => {
+    return JSON.stringify({
+      type: 'status',
+      payload: {
+        isConnected: this.ebb.isConnected,
+        isPlotting: this.isPlotting,
+      },
+    });
   };
   addConnection = (connection) => {
     // Create a unique id for the connection
@@ -55,15 +56,6 @@ export class PlotterInterface {
   broadcast = (message) => {
     this.connections.forEach((connection) => {
       connection.socket.send(message);
-    });
-  };
-  getStatusMessage = () => {
-    return JSON.stringify({
-      type: 'status',
-      payload: {
-        isConnected: this.ebb.isConnected,
-        isPlotting: this.isPlotting,
-      },
     });
   };
 }
