@@ -1,3 +1,4 @@
+import logger from 'loglevel';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -22,6 +23,7 @@ const fastify = Fastify({
     },
   },
 });
+
 
 function main() {
   fastify.register(fastifyWebSocket);

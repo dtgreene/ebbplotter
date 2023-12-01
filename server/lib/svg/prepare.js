@@ -37,8 +37,9 @@ export function prepareSVG(data, options = {}) {
     throw new Error('Root SVG element not found');
   }
 
-  let viewBox = parseViewBox(svg);
-  let elements = flattenGroup(svg);
+  const { viewBox, translation } = parseViewBox(svg);
+
+  let elements = flattenGroup(svg, translation);
   let groupIds = [];
 
   // Accumulate unique group ids
@@ -80,7 +81,6 @@ export function prepareSVG(data, options = {}) {
 function flattenGroup(group, prevTransform = '', ids = []) {
   const groupStyle = parseStyle(group.style) ?? {};
   const groupTransform = combineTransforms(
-    prevTransform,
     groupStyle.transform,
     group.transform,
   );
@@ -99,16 +99,33 @@ function flattenGroup(group, prevTransform = '', ids = []) {
       const children = Array.isArray(value) ? value : [value];
 
       if (isGroup) {
+        let nextTransform = '';
+
+        if (group.tag === 'svg') {
+          const { translation } = parseViewBox(group);
+          nextTransform = combineTransforms(
+            prevTransform,
+            translation,
+            groupTransform,
+          );
+        } else {
+          nextTransform = combineTransforms(prevTransform, groupTransform);
+        }
+
         children.forEach((child) => {
-          result = result.concat(flattenGroup(child, groupTransform, groupIds));
+          result = result.concat(flattenGroup(child, nextTransform, groupIds));
         });
       } else {
         children.forEach((child) => {
           const childStyle = parseStyle(child.style) ?? {};
           const childTransform = combineTransforms(
-            groupTransform,
             childStyle.transform,
             child.transform,
+          );
+          const nextTransform = combineTransforms(
+            prevTransform,
+            groupTransform,
+            childTransform,
           );
 
           // Skip hidden children
@@ -116,7 +133,7 @@ function flattenGroup(group, prevTransform = '', ids = []) {
             result.push({
               ...child,
               tag,
-              transform: childTransform,
+              transform: nextTransform,
               groupIds,
             });
           }
@@ -142,17 +159,33 @@ function isHidden(element, style) {
 }
 
 function parseViewBox(element) {
-  if (!element.viewBox) {
-    throw new Error('Missing viewBox attribute.');
-  }
+  let minX = 0;
+  let minY = 0;
+  let width = NaN;
+  let height = NaN;
+  let translation = '';
 
-  const [minX, minY, width, height] = element.viewBox
-    .split(' ')
-    .map((value) => parseFloat(value));
+  if (!element.viewBox) {
+    if (element.width && element.height) {
+      width = Number(element.width.match(/\d*/));
+      height = Number(element.height.match(/\d*/));
+    }
+  } else {
+    const split = element.viewBox.split(' ').map((value) => Number(value));
+
+    minX = split[0];
+    minY = split[1];
+    width = split[2];
+    height = split[3];
+  }
 
   if (isNaN(width) || isNaN(height)) {
-    throw new Error('Invalid viewBox width or height.');
+    throw new Error('Could not determine view box dimensions.');
   }
 
-  return { minX, minY, width, height };
+  if ((minX !== 0 || minY !== 0) && !isNaN(minX) && !isNaN(minY)) {
+    translation = `translate(${minX}, ${minY})`;
+  }
+
+  return { viewBox: { minX, minY, width, height }, translation };
 }
