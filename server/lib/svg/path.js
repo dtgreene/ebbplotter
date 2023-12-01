@@ -1,8 +1,8 @@
 import logger from 'loglevel';
+import colors from 'colors/safe.js';
 import SVGPath from 'svgpath';
 import createBezierBuilder from 'adaptive-bezier-curve/function.js';
 
-import { orange } from '../utils.js';
 
 // See:
 // https://github.com/mattdesl/adaptive-bezier-curve/blob/master/function.js#L12-L18
@@ -113,7 +113,9 @@ export function getPathList(
             break;
           }
           default: {
-            logger.warn(orange(`Encountered unknown path command: ${command}`));
+            logger.warn(
+              colors.yellow(`Encountered unknown path command: ${command}`),
+            );
           }
         }
       });

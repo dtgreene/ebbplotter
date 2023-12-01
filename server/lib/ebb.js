@@ -1,8 +1,8 @@
-import { ReadlineParser, SerialPort } from 'serialport';
 import logger from 'loglevel';
+import colors from 'colors/safe.js';
+import { ReadlineParser, SerialPort } from 'serialport';
 
 import { getSMCommand, getLMCommand } from './movement.js';
-import { blue } from './utils.js';
 
 const SERIAL_PRODUCT_ID = 'fd92';
 const SERIAL_MANUFACTURER = 'schmalzhaus';
@@ -227,7 +227,7 @@ export class EBB {
     }
   };
   write = (message) => {
-    logger.debug(blue(`Writing message: ${message}`));
+    logger.debug(colors.blue(`Writing message: ${message}`));
 
     if (!this.isConnected) {
       throw new Error('Not connected');
@@ -255,7 +255,7 @@ export class EBB {
     });
   };
   writeAndRead = (message, multiple = true) => {
-    logger.debug(blue(`Writing message: ${message}`));
+    logger.debug(colors.blue(`Writing message: ${message}`));
 
     if (!this.isConnected) {
       throw new Error('Not connected');
@@ -309,7 +309,7 @@ export class EBB {
   onSerialData = (chunk) => {
     const message = chunk.toString().trim();
 
-    logger.debug(blue(`Received message: ${message}`));
+    logger.debug(colors.blue(`Received message: ${message}`));
 
     if (this.responseHandler) {
       this.responseHandler.data += message;

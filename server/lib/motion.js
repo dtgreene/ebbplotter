@@ -1,7 +1,7 @@
 import logger from 'loglevel';
+import colors from 'colors/safe.js';
 
 import { getSMCommand, getLMCommand } from './movement.js';
-import { orange } from './utils.js';
 
 const EPSILON = 0.01;
 const MIN_FALLBACK_SPEED = 5;
@@ -44,7 +44,7 @@ export class MotionPlanner {
 
     // TODO: handle single point paths
     if (path.length === 0 || path.length % 2 !== 0) {
-      logger.warn(orange('Skipping empty path.'));
+      logger.warn(colors.yellow('Skipping empty path.'));
     }
 
     let commands = [];
@@ -59,7 +59,7 @@ export class MotionPlanner {
       const motionSegment = new MotionSegment(path[i], path[i + 1]);
 
       if (motionSegment.length === 0) {
-        logger.warn(orange('Skipping zero-length motion segment.'));
+        logger.warn(colors.yellow('Skipping zero-length motion segment.'));
         continue;
       }
 
@@ -122,7 +122,7 @@ export class MotionPlanner {
       // Raise the pen
       commands.push('SP,0', servo.duration);
     } else {
-      logger.warn(orange('Skipping path with no motion segments.'));
+      logger.warn(colors.yellow('Skipping path with no motion segments.'));
     }
 
     // Update the position
