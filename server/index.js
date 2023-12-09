@@ -1,4 +1,3 @@
-import logger from 'loglevel';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -8,7 +7,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 
 import routes from './routes.js';
-import { PlotterInterface } from './plotter.js';
+import { Plotter } from './plotter.js';
 
 const port = 8080;
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -24,7 +23,6 @@ const fastify = Fastify({
   },
 });
 
-
 function main() {
   fastify.register(fastifyWebSocket);
   fastify.register(fastifyStatic, {
@@ -34,7 +32,7 @@ function main() {
   fastify.register(fastifyCors);
 
   // Decorate the plot interface
-  fastify.decorate('plotter', new PlotterInterface());
+  fastify.decorate('plotter', new Plotter());
   // Routes
   fastify.register(routes);
 
@@ -44,7 +42,7 @@ function main() {
 
   fastify.listen({ port }, (error) => {
     if (!error) {
-      fastify.plotter.serialConnect();
+      fastify.plotter.ebb.connect();
     } else {
       console.error(error);
     }
@@ -52,4 +50,3 @@ function main() {
 }
 
 main();
-

@@ -3,7 +3,8 @@ import colors from 'colors/safe.js';
 import { EventEmitter } from 'node:events';
 import { ReadlineParser, SerialPort } from 'serialport';
 
-import { getSMCommand, getLMCommand } from './movement.js';
+import { getSMCommand, getLMCommand, getPenCommand } from './movement.js';
+import { wait } from './utils.js';
 
 const SERIAL_PRODUCT_ID = 'fd92';
 const SERIAL_MANUFACTURER = 'schmalzhaus';
@@ -64,6 +65,8 @@ export class EBB {
               this.isConnected = true;
               resolve();
 
+              logger.debug(colors.green('[Serial]: Connected.'));
+
               this.emitter.emit('connect');
             } else {
               reject(error);
@@ -80,7 +83,9 @@ export class EBB {
       });
     } else {
       this.reconnect();
-      logger.debug(blue('Could not open serial port; EBB was not found.'));
+      logger.debug(
+        colors.green('Could not open serial port; EBB was not found.'),
+      );
     }
   };
   disconnect = async () => {
@@ -181,10 +186,19 @@ export class EBB {
   //   await this.write(`SC,4,${minPosition}`);
   //   await this.write(`SC,5,${maxPosition}`);
   // };
-  enableMotors = async (stepMode) => {
+
+  enableMotors = async (stepMode, skipQuery = false) => {
     // https://evil-mad.github.io/EggBot/ebb.html#EM
     // versions: all
-    await this.write(`EM,${stepMode},1`);
+    if (skipQuery) {
+      await this.write(`EM,${stepMode},1`);
+    } else {
+      const { mode1, mode2 } = await this.queryMotorModes();
+
+      if (mode1 !== stepMode || mode2 !== stepMode) {
+        await this.write(`EM,${stepMode},1`);
+      }
+    }
   };
   disableMotors = async () => {
     // https://evil-mad.github.io/EggBot/ebb.html#EM
@@ -194,7 +208,7 @@ export class EBB {
   setPen = async (position, rate, duration) => {
     // https://evil-mad.github.io/EggBot/ebb.html#S2
     // versions: v2.2.0 and later
-    await this.write(`S2,${position},4,${rate},0`);
+    await this.write(getPenCommand(position, rate));
     await wait(duration);
   };
   penDown = async (duration) => {
@@ -247,8 +261,8 @@ export class EBB {
       await wait(duration);
     }
   };
-  write = (message) => {
-    logger.debug(colors.blue(`Writing message: ${message}`));
+  write = (message, delay = 0) => {
+    logger.debug(colors.green(`[Serial]: Writing message: ${message}`));
 
     if (!this.isConnected) {
       throw new Error('Not connected');
@@ -271,12 +285,16 @@ export class EBB {
       this.port.write(message.concat('\r'), 'ascii');
       this.port.drain(() => {
         clearTimeout(writeTimeout);
-        resolve();
+        if (delay > 0) {
+          setTimeout(resolve, delay);
+        } else {
+          resolve();
+        }
       });
     });
   };
   writeAndRead = (message, multiple = true) => {
-    logger.debug(colors.blue(`Writing message: ${message}`));
+    logger.debug(colors.green(`[Serial]: Writing message: ${message}`));
 
     if (!this.isConnected) {
       throw new Error('Not connected');
@@ -334,7 +352,7 @@ export class EBB {
   onSerialData = (chunk) => {
     const message = chunk.toString().trim();
 
-    logger.debug(colors.blue(`Received message: ${message}`));
+    logger.debug(colors.green(`[Serial]: Received message: ${message}`));
 
     if (this.responseHandler) {
       this.responseHandler.data += message;
@@ -364,12 +382,6 @@ export function getStepsPerMM({
   return stepsPerRotation / circumference;
 }
 
-export function getServoPosition(minPosition, maxPosition, heightPercent) {
-  return Math.round(
-    minPosition + (maxPosition - minPosition) * (heightPercent * 0.01),
-  );
-}
-
 function getPortProps(port) {
   return PORT_PROPS.map((prop) =>
     typeof port[prop] === 'string' ? port[prop].toLowerCase() : '',
@@ -392,8 +404,4 @@ async function getEBBPort() {
       );
     }
   });
-}
-
-function wait(duration) {
-  return new Promise((res) => setTimeout(res, duration));
 }

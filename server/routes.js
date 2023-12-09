@@ -1,6 +1,6 @@
-import { getStepsPerMM, getServoPosition } from './lib/ebb.js';
+import { getStepsPerMM } from './lib/ebb.js';
 import { prepareSVG } from './lib/svg/prepare.js';
-import { MotionPlanner } from './lib/motion.js';
+import { getServoPosition } from './lib/movement.js';
 
 const layoutSchema = {
   properties: {
@@ -175,10 +175,11 @@ export default (fastify, options, done) => {
         const { data, ...options } = layout;
         const { pathList } = prepareSVG(data, options);
 
-        // motion plan
-        // fastify.plotter.begin(new MotionPlanner(pathList, machine));
+        fastify.plotter.plot(pathList, machine);
 
-        return JSON.stringify({ message: 'ok' });
+        return reply
+          .status(200)
+          .send(JSON.stringify({ message: 'Plot started' }));
       } catch (error) {
         request.log.error(error.message);
         return reply
@@ -187,6 +188,23 @@ export default (fastify, options, done) => {
       }
     },
   );
+
+  // fastify.post('/plot/stop', async (request, reply) => {
+  //   const { ebb } = fastify.plotter;
+
+  //   if (!ebb.isConnected) {
+  //     return replyDisconnected(reply);
+  //   }
+
+  //   try {
+  //     fastify.plotter.stop();
+
+  //     return JSON.stringify({ message: 'Success' });
+  //   } catch (error) {
+  //     request.log.error(error.message);
+  //     return reply.status(500).send(JSON.stringify({ message: error.message }));
+  //   }
+  // });
 
   fastify.post(
     '/control/set-pen',
@@ -258,7 +276,7 @@ export default (fastify, options, done) => {
       try {
         const { stepMode } = request.body;
 
-        await ebb.enableMotors(stepMode);
+        await ebb.enableMotors(stepMode, true);
 
         return JSON.stringify({ message: 'Success' });
       } catch (error) {
@@ -346,12 +364,8 @@ export default (fastify, options, done) => {
 
       try {
         const { x, y, speed, stepper } = request.body;
-        const { mode1, mode2 } = await ebb.queryMotorModes();
 
-        if (mode1 !== stepper.stepMode || mode2 !== stepper.stepMode) {
-          await ebb.enableMotors(stepper.stepMode);
-        }
-
+        await ebb.enableMotors(stepper.stepMode);
         await ebb.move(0, 0, x, y, speed, stepper);
 
         return JSON.stringify({ message: 'Success' });
@@ -455,7 +469,7 @@ export default (fastify, options, done) => {
   );
 
   fastify.get('/socket', { websocket: true }, (connection) => {
-    fastify.plotter.addConnection(connection);
+    fastify.plotter.sockets.add(connection);
   });
 
   done();

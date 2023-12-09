@@ -30,6 +30,8 @@ export const appState = createStorageProxy('ebbplotter', {
   dark: true,
   sidebarTab: 0,
   showAdvancedSettings: false,
+  showDebugModal: false,
+  showCalculatorModal: false,
   jogDistance: '5',
   jogSpeed: '10',
   machine: {

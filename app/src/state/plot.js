@@ -3,6 +3,7 @@ import debounce from 'lodash.debounce';
 
 import { appState } from './app';
 import { postRequest } from '../utils';
+import { isDisabled } from '../hooks/useAppDisabled';
 
 export const plotState = proxy({
   previewRequest: {
@@ -33,7 +34,7 @@ export function getPreview() {
   const { currentFile } = appState;
 
   if (!currentFile) return;
-  if (plotState.previewRequest.isLoading) return;
+  if (isDisabled()) return;
 
   const body = JSON.stringify(getLayoutBody());
 
@@ -47,7 +48,7 @@ export function getPreview() {
 export const debouncedGetPreview = debounce(getPreview, 400);
 
 export function startPlot() {
-  if (plotState.startPlotRequest.isLoading) return;
+  if (isDisabled()) return;
 
   const body = JSON.stringify({
     layout: getLayoutBody(),

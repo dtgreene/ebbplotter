@@ -113,7 +113,7 @@ function flattenGroup(group, prevTransform = '', ids = []) {
         }
 
         children.forEach((child) => {
-          result = result.concat(flattenGroup(child, nextTransform, groupIds));
+          result.push(...flattenGroup(child, nextTransform, groupIds));
         });
       } else {
         children.forEach((child) => {

@@ -4,6 +4,8 @@ import clsx from 'clsx';
 
 import { appState } from 'src/state/app';
 import { plotState } from 'src/state/plot';
+import { socketState } from 'src/state/socket';
+import { useAppDisabled } from 'src/hooks/useAppDisabled';
 import { NumberInput } from '../NumberInput';
 import { Select } from '../Select';
 import { FieldLabel } from '../FieldLabel';
@@ -122,9 +124,10 @@ const handleDisplayChange = (key) => {
 export const LayoutTab = () => {
   const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
+  const isDisabled = useAppDisabled();
 
   const { dimensions, optimizations, display } = appSnap;
-  const { data, isLoading } = plotSnap.previewRequest;
+  const { data } = plotSnap.previewRequest;
   const previewGroupIds = data?.groupIds ?? [];
 
   return (
@@ -134,21 +137,21 @@ export const LayoutTab = () => {
           <NumberInput
             value={dimensions.width}
             onChange={handleWidthChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Width"
             units="mm"
           />
           <button
             className="mt-6 hover:opacity-75 transition-opacity disabled:opacity-50 disabled:cursor-default"
             onClick={handleDimensionSwapClick}
-            disabled={isLoading}
+            disabled={isDisabled}
           >
             <ArrowsLeftRightIcon />
           </button>
           <NumberInput
             value={dimensions.height}
             onChange={handleHeightChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Height"
             units="mm"
           />
@@ -156,7 +159,7 @@ export const LayoutTab = () => {
         <Select
           value={dimensions.preset}
           onChange={handleSizeChange}
-          disabled={isLoading}
+          disabled={isDisabled}
           options={sizeOptions}
           label="Preset"
         />
@@ -173,12 +176,12 @@ export const LayoutTab = () => {
                 <CheckBox
                   value={!plotSnap.excludeIds.includes(id)}
                   onChange={() => handleExcludeIdChange(id)}
-                  disabled={isLoading}
+                  disabled={isDisabled}
                 />
                 <span
                   className={clsx(
                     'flex-1 overflow-ellipsis whitespace-nowrap overflow-hidden transition-opacity',
-                    { 'opacity-50': isLoading },
+                    { 'opacity-50': isDisabled },
                   )}
                 >
                   {id}
@@ -198,14 +201,14 @@ export const LayoutTab = () => {
           <NumberInput
             value={appSnap.margins.top}
             onChange={handleTopMarginChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Top"
             units="mm"
           />
           <NumberInput
             value={appSnap.margins.right}
             onChange={handleRightMarginChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Right"
             units="mm"
           />
@@ -214,14 +217,14 @@ export const LayoutTab = () => {
           <NumberInput
             value={appSnap.margins.bottom}
             onChange={handleBottomMarginChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Bottom"
             units="mm"
           />
           <NumberInput
             value={appSnap.margins.left}
             onChange={handleLeftMarginChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             label="Left"
             units="mm"
           />
@@ -231,7 +234,7 @@ export const LayoutTab = () => {
         <SlideSelect
           value={appSnap.alignment}
           onChange={handleAlignmentChange}
-          disabled={isLoading}
+          disabled={isDisabled}
           options={alignmentOptions}
           label="Alignment"
         />
@@ -239,7 +242,7 @@ export const LayoutTab = () => {
           <NumberInput
             value={appSnap.rotation}
             onChange={handleRotationChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             className="flex-1"
             label="Rotation"
             units="deg"
@@ -250,7 +253,7 @@ export const LayoutTab = () => {
             <CheckBox
               value={appSnap.useBoundingBox}
               onChange={handleUseBoundingBoxChange}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Use Bounding Box</FieldLabel>
           </div>
@@ -262,14 +265,14 @@ export const LayoutTab = () => {
             <CheckBox
               value={optimizations.merge}
               onChange={() => handleOptimizationChange('merge')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Merge</FieldLabel>
           </div>
           <NumberInput
             value={optimizations.mergeDistance}
             onChange={handleMergeDistanceChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             className="flex-1"
             units="mm"
             step="0.1"
@@ -280,14 +283,14 @@ export const LayoutTab = () => {
             <CheckBox
               value={optimizations.removeShort}
               onChange={() => handleOptimizationChange('removeShort')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Remove Short</FieldLabel>
           </div>
           <NumberInput
             value={optimizations.removeShortDistance}
             onChange={handleRemoveShortDistanceChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             className="flex-1"
             units="mm"
             step="0.1"
@@ -297,7 +300,7 @@ export const LayoutTab = () => {
           <CheckBox
             value={optimizations.reorder}
             onChange={() => handleOptimizationChange('reorder')}
-            disabled={isLoading}
+            disabled={isDisabled}
           />
           <FieldLabel>Reorder</FieldLabel>
         </div>
@@ -306,14 +309,14 @@ export const LayoutTab = () => {
             <CheckBox
               value={optimizations.randomizeStart}
               onChange={() => handleOptimizationChange('randomizeStart')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Randomize Start</FieldLabel>
           </div>
           <NumberInput
             value={optimizations.randomizeStartTolerance}
             onChange={handleRandomizeToleranceChange}
-            disabled={isLoading}
+            disabled={isDisabled}
             className="flex-1"
             units="mm"
             step="0.1"
@@ -326,7 +329,7 @@ export const LayoutTab = () => {
             <CheckBox
               value={display.penDown}
               onChange={() => handleDisplayChange('penDown')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Pen Down</FieldLabel>
           </div>
@@ -334,7 +337,7 @@ export const LayoutTab = () => {
             <CheckBox
               value={display.penUp}
               onChange={() => handleDisplayChange('penUp')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Pen Up</FieldLabel>
           </div>
@@ -344,7 +347,7 @@ export const LayoutTab = () => {
             <CheckBox
               value={display.margins}
               onChange={() => handleDisplayChange('margins')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Margins</FieldLabel>
           </div>
@@ -352,7 +355,7 @@ export const LayoutTab = () => {
             <CheckBox
               value={display.boundingBox}
               onChange={() => handleDisplayChange('boundingBox')}
-              disabled={isLoading}
+              disabled={isDisabled}
             />
             <FieldLabel>Bounding Box</FieldLabel>
           </div>

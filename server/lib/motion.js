@@ -1,20 +1,25 @@
 import logger from 'loglevel';
 import colors from 'colors/safe.js';
 
-import { getSMCommand, getLMCommand } from './movement.js';
+import {
+  getSMCommand,
+  getLMCommand,
+  getServoPosition,
+  getPenCommand,
+} from './movement.js';
 
 const EPSILON = 0.01;
 const MIN_FALLBACK_SPEED = 5;
 
-class MotionSegment {
-  constructor(pathA, pathB) {
-    this.x1 = pathA.x;
-    this.y1 = pathA.y;
-    this.x2 = pathB.x;
-    this.y2 = pathB.y;
+export class MotionSegment {
+  constructor(pointA, pointB) {
+    this.x1 = pointA.x;
+    this.y1 = pointA.y;
+    this.x2 = pointB.x;
+    this.y2 = pointB.y;
     this.entrySpeed = 0;
-    this.deltaX = pathB.x - pathA.x;
-    this.deltaY = pathB.y - pathA.y;
+    this.deltaX = pointB.x - pointA.x;
+    this.deltaY = pointB.y - pointA.y;
     this.distance = Math.hypot(this.deltaX, this.deltaY);
     this.direction = [0, 0];
 
@@ -28,108 +33,125 @@ class MotionSegment {
 }
 
 export class MotionPlanner {
-  constructor(pathList, machine) {
+  constructor(machine) {
     this.machine = machine;
-    this.pathList = pathList;
-    this.index = 0;
-    this.position = { x: 0, y: 0 };
 
-    const { stepsPerMM } = this.machine.stepper;
-    this.minCommandDistance = 1 / stepsPerMM;
+    const { stepper, servo } = this.machine;
+    this.minCommandDistance = 1 / stepper.stepsPerMM;
+
+    this.penDownPosition = getServoPosition(
+      servo.minPosition,
+      servo.maxPosition,
+      servo.downPercent,
+    );
+    this.penUpPosition = getServoPosition(
+      servo.minPosition,
+      servo.maxPosition,
+      servo.upPercent,
+    );
   }
-  getNextPlan = () => {
-    const path = this.pathList[this.index++];
-
-    if (!path) return null;
-
-    // TODO: handle single point paths
-    if (path.length === 0 || path.length % 2 !== 0) {
-      logger.warn(colors.yellow('Invalid path length.'));
-    }
-
-    let commands = [];
-    let motionSegments = [];
-    let prevMotionSegment = null;
-
-    const { servo, stepper } = this.machine;
+  plan = (pathList) => {
+    const { stepper, servo } = this.machine;
     const { upSpeed, downSpeed } = stepper;
+    const position = { x: 0, y: 0 };
 
-    // Convert the path into a list of motion segment instances
-    for (let i = 0; i < path.length - 1; i++) {
-      const motionSegment = new MotionSegment(path[i], path[i + 1]);
+    const startCommands = [
+      getPenCommand(this.penUpPosition, servo.rate),
+      servo.duration,
+    ];
+    const commands = pathList.reduce((result, path) => {
+      if (path.length < 2) return result;
 
-      if (motionSegment.length === 0) {
-        logger.warn(colors.yellow('Skipping zero-length motion segment.'));
-        continue;
-      }
+      let prevMotionSegment = null;
+      const motionSegments = [];
 
-      if (prevMotionSegment) {
-        motionSegment.entrySpeed = this._getCornerSpeed(
-          prevMotionSegment,
-          motionSegment,
-          downSpeed,
-        );
-      }
-
-      motionSegments.push(motionSegment);
-      prevMotionSegment = motionSegment;
-    }
-
-    if (motionSegments.length > 0) {
-      // Adjust the speeds to stay within the allowed acceleration
-      this._smoothMotionSpeeds(motionSegments);
-
-      // Move to the beginning of the first segment
-      const firstSegment = motionSegments[0];
-      const penUpSegment = new MotionSegment(
-        this.position.x,
-        this.position.y,
-        firstSegment.x1,
-        firstSegment.y1,
-      );
-      const penUpCommands = this._getSegmentCommands(
-        penUpSegment,
-        0,
-        0,
-        upSpeed,
-      );
-
-      // Add the pen up motion commands
-      if (penUpCommands.length > 0) {
-        commands = commands.concat(penUpCommands);
-      }
-      // Lower the pen
-      commands.push('SP,1', servo.duration);
-
-      // Create commands
-      for (let i = 0; i < motionSegments.length; i++) {
-        const currentSegment = motionSegments[i];
-        const nextSegment = motionSegments[i + 1];
-
-        const { entrySpeed } = currentSegment;
-        const nextEntrySpeed = nextSegment ? nextSegment.entrySpeed : 0;
-
-        commands = commands.concat(
-          this._getSegmentCommands(
-            currentSegment,
-            entrySpeed,
-            nextEntrySpeed,
+      // Convert the path into a list of motion segment instances
+      for (let i = 0; i < path.length - 1; i++) {
+        const motionSegment = new MotionSegment(path[i], path[i + 1]);
+        if (motionSegment.length === 0) continue;
+        if (prevMotionSegment) {
+          motionSegment.entrySpeed = this._getCornerSpeed(
+            prevMotionSegment,
+            motionSegment,
             downSpeed,
-          ),
+          );
+        }
+
+        motionSegments.push(motionSegment);
+        prevMotionSegment = motionSegment;
+      }
+
+      if (motionSegments.length > 0) {
+        // Adjust the speeds to stay within the allowed acceleration
+        this._smoothMotionSpeeds(motionSegments);
+
+        // Move to the beginning of the first segment
+        const penUpSegment = new MotionSegment(position, {
+          x: motionSegments[0].x1,
+          y: motionSegments[0].y1,
+        });
+        const penUpCommands = this._getSegmentCommands(
+          penUpSegment,
+          0,
+          0,
+          upSpeed,
+        );
+
+        // Add the pen up motion commands
+        if (penUpCommands.length > 0) {
+          result.push(...penUpCommands);
+        }
+
+        // Lower the pen
+        // result.push(...this._penDown());
+
+        // Create commands
+        for (let i = 0; i < motionSegments.length; i++) {
+          const currentSegment = motionSegments[i];
+          const nextSegment = motionSegments[i + 1];
+
+          const { entrySpeed } = currentSegment;
+          const nextEntrySpeed = nextSegment ? nextSegment.entrySpeed : 0;
+
+          result.push(
+            ...this._getSegmentCommands(
+              currentSegment,
+              entrySpeed,
+              nextEntrySpeed,
+              downSpeed,
+            ),
+          );
+        }
+
+        // Raise the pen
+        // result.push(...this._penUp());
+      } else {
+        logger.warn(
+          colors.yellow('[Serial]: Skipping path with no motion segments.'),
         );
       }
 
-      // Raise the pen
-      commands.push('SP,0', servo.duration);
-    } else {
-      logger.warn(colors.yellow('Skipping path with no motion segments.'));
-    }
+      // Update the position
+      position.x = path[path.length - 1].x;
+      position.y = path[path.length - 1].y;
 
-    // Update the position
-    this.position.x = path[path.length - 2];
-    this.position.y = path[path.length - 1];
+      return result;
+    }, startCommands);
 
-    return commands;
+    const homeSegment = new MotionSegment(position, { x: 0, y: 0 });
+
+    return [
+      ...commands,
+      ...this._getSegmentCommands(homeSegment, 0, 0, upSpeed),
+    ];
+  };
+  _penDown = () => {
+    const { servo } = this.machine;
+    return [getPenCommand(this.penDownPosition, servo.rate), servo.duration];
+  };
+  _penUp = () => {
+    const { servo } = this.machine;
+    return [getPenCommand(this.penUpPosition, servo.rate), servo.duration];
   };
   _getSegmentCommands = (motionSegment, entrySpeed, exitSpeed, maxSpeed) => {
     const segmentLength = motionSegment.distance;
@@ -176,8 +198,16 @@ export class MotionPlanner {
       const pointX = x1 + segmentDirection[0] * distance;
       const pointY = y1 + segmentDirection[1] * distance;
 
-      commands = commands.concat(
-        getLMCommand(prevX, prevY, pointX, pointY, lastSpeed, speed, stepper),
+      commands.push(
+        ...getLMCommand(
+          prevX,
+          prevY,
+          pointX,
+          pointY,
+          lastSpeed,
+          speed,
+          stepper,
+        ),
       );
 
       prevX = pointX;
@@ -186,8 +216,8 @@ export class MotionPlanner {
     });
 
     // Attach the final command
-    commands = commands.concat(
-      getLMCommand(prevX, prevY, x2, y2, lastSpeed, exitSpeed, stepper),
+    commands.push(
+      ...getLMCommand(prevX, prevY, x2, y2, lastSpeed, exitSpeed, stepper),
     );
 
     return commands;
@@ -197,14 +227,14 @@ export class MotionPlanner {
       return true;
     }
 
-    const { planner } = this.machine;
+    const { planning } = this.machine;
     const delta = Math.abs(exitSpeed * exitSpeed - entrySpeed * entrySpeed);
     const acceleration = delta / (2 * distance);
 
-    return acceleration - planner.acceleration < EPSILON;
+    return acceleration - planning.acceleration < EPSILON;
   };
   _getMotionProfile = (entrySpeed, exitSpeed, maxSpeed, segmentLength) => {
-    const { acceleration } = this.machine.planner;
+    const { acceleration } = this.machine.planning;
 
     const accelTime = (maxSpeed - entrySpeed) / acceleration;
     const accelDistance = (entrySpeed + maxSpeed) * 0.5 * accelTime;
@@ -285,7 +315,7 @@ export class MotionPlanner {
     }
   };
   _getSpeed = (startSpeed, distance) => {
-    const { acceleration } = this.machine.planner;
+    const { acceleration } = this.machine.planning;
     return Math.sqrt(startSpeed * startSpeed + 2 * acceleration * distance);
   };
   _getCornerSpeed = (segmentA, segmentB, maxSpeed) => {
@@ -301,7 +331,7 @@ export class MotionPlanner {
       return maxSpeed;
     }
 
-    const { acceleration, cornerFactor } = this.machine.planner;
+    const { acceleration, cornerFactor } = this.machine.planning;
     const cornerSpeed = Math.sqrt(
       (acceleration * cornerFactor * sine) / (1 - sine),
     );

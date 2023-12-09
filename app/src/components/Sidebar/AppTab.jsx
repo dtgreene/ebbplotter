@@ -2,7 +2,7 @@ import React from 'react';
 import { useSnapshot } from 'valtio';
 
 import { appState, toggleDarkMode } from 'src/state/app';
-import { plotState } from 'src/state/plot';
+import { useAppDisabled } from 'src/hooks/useAppDisabled';
 import { CheckBox } from '../CheckBox';
 import { FieldLabel } from '../FieldLabel';
 import { Button } from '../Button';
@@ -14,9 +14,7 @@ const handleEraseClick = () => {
 
 export const AppTab = () => {
   const appSnap = useSnapshot(appState);
-  const plotSnap = useSnapshot(plotState);
-
-  const { isLoading } = plotSnap.previewRequest;
+  const isDisabled = useAppDisabled();
 
   return (
     <>
@@ -24,7 +22,7 @@ export const AppTab = () => {
         <CheckBox
           value={appSnap.dark}
           onChange={toggleDarkMode}
-          disabled={isLoading}
+          disabled={isDisabled}
         />
         <FieldLabel>Dark Mode</FieldLabel>
       </div>
@@ -32,6 +30,7 @@ export const AppTab = () => {
         className="w-full"
         variant="primaryOutlined"
         onClick={handleEraseClick}
+        disabled={isDisabled}
       >
         Delete Persisted State
       </Button>

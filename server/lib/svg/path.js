@@ -3,7 +3,6 @@ import colors from 'colors/safe.js';
 import SVGPath from 'svgpath';
 import createBezierBuilder from 'adaptive-bezier-curve/function.js';
 
-
 // See:
 // https://github.com/mattdesl/adaptive-bezier-curve/blob/master/function.js#L12-L18
 const DEFAULT_BEZIER_OPTIONS = {
@@ -114,7 +113,9 @@ export function getPathList(
           }
           default: {
             logger.warn(
-              colors.yellow(`Encountered unknown path command: ${command}`),
+              colors.yellow(
+                `[Serial]: Encountered unknown path command: ${command}`,
+              ),
             );
           }
         }

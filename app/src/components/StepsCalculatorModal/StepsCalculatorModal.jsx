@@ -14,6 +14,7 @@ const modalState = proxy({
   mounted: false,
   timeoutId: null,
 });
+
 const state = proxy({
   getStepsPerMM: {
     isLoading: false,
@@ -33,6 +34,39 @@ export const stepModeOptions = [
   { value: '5', label: '1' },
 ];
 
+const handleStepAngleChange = (event) => {
+  state.stepAngle = event.target.value;
+};
+
+const handleStepModeChange = (event) => {
+  appState.machine.stepper.stepMode = event.target.value;
+};
+
+const handleBeltPitchChange = (event) => {
+  state.beltPitch = event.target.value;
+};
+
+const handlePulleyToothChange = (event) => {
+  state.pulleyToothCount = event.target.value;
+};
+
+const handleCalculateClick = async () => {
+  if (state.getStepsPerMM.isLoading) return;
+
+  state.getStepsPerMM.isLoading = true;
+
+  const { stepMode } = stepper;
+  const { stepAngle, beltPitch, pulleyToothCount } = state;
+  const body = JSON.stringify({
+    stepMode: Number(stepMode),
+    stepAngle: Number(stepAngle),
+    beltPitch: Number(beltPitch),
+    pulleyToothCount: Number(pulleyToothCount),
+  });
+
+  postRequest(state.getStepsPerMM, { path: '/steps-per-mm', body });
+};
+
 export const StepsCalculatorModal = ({ active, onClose }) => {
   const { visible, mounted } = useModal(modalState, active);
   const appSnap = useSnapshot(appState);
@@ -42,39 +76,6 @@ export const StepsCalculatorModal = ({ active, onClose }) => {
 
   const { isLoading, data } = stateSnap.getStepsPerMM;
   const { stepper } = appSnap.machine;
-
-  const handleStepAngleChange = (event) => {
-    state.stepAngle = event.target.value;
-  };
-
-  const handleStepModeChange = (event) => {
-    appState.machine.stepper.stepMode = event.target.value;
-  };
-
-  const handleBeltPitchChange = (event) => {
-    state.beltPitch = event.target.value;
-  };
-
-  const handlePulleyToothChange = (event) => {
-    state.pulleyToothCount = event.target.value;
-  };
-
-  const handleCalculateClick = async () => {
-    if (state.getStepsPerMM.isLoading) return;
-
-    state.getStepsPerMM.isLoading = true;
-
-    const { stepMode } = stepper;
-    const { stepAngle, beltPitch, pulleyToothCount } = state;
-    const body = JSON.stringify({
-      stepMode: Number(stepMode),
-      stepAngle: Number(stepAngle),
-      beltPitch: Number(beltPitch),
-      pulleyToothCount: Number(pulleyToothCount),
-    });
-
-    postRequest(state.getStepsPerMM, { path: '/steps-per-mm', body });
-  };
 
   const handleUseValueClick = () => {
     appState.machine.stepper.stepsPerMM = data.stepsPerMM;

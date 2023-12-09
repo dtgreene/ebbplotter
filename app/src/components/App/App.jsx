@@ -14,6 +14,7 @@ import {
 import { appState } from 'src/state/app';
 import { socketState } from 'src/state/socket';
 import { createSocket, cleanupSocket } from 'src/state/socket';
+import { useAppDisabled } from 'src/hooks/useAppDisabled';
 import { Button, ButtonGroup } from '../Button';
 import { Alerts } from '../Alerts';
 import { PreviewSVG } from '../PreviewSVG';
@@ -22,14 +23,24 @@ import { Sidebar } from '../Sidebar';
 import FolderOpenIcon from '../Icons/FolderOpen';
 import XMarkIcon from '../Icons/XMark';
 import ChevronDownIcon from '../Icons/ChevronDown';
+import { DebugModal } from '../DebugModal';
 
 const acceptedFiles = { 'image/svg+xml': ['.svg'] };
 const reader = new FileReader();
+
+const handleDebugOpen = () => {
+  appState.showDebugModal = true;
+};
+
+const handleDebugClose = () => {
+  appState.showDebugModal = false;
+};
 
 export const App = () => {
   const appSnap = useSnapshot(appState);
   const plotSnap = useSnapshot(plotState);
   const socketSnap = useSnapshot(socketState);
+  const isDisabled = useAppDisabled();
 
   useEffect(() => {
     const unsubApp = subscribe(appState, debouncedGetPreview);
@@ -84,16 +95,10 @@ export const App = () => {
   };
 
   const { isLoading: previewIsLoading } = plotSnap.previewRequest;
-  const { isLoading: plotIsLoading } = plotSnap.startPlotRequest;
-
   const { currentFile } = appSnap;
   const { plotter } = socketSnap;
 
-  const plotIsDisabled =
-    previewIsLoading ||
-    plotIsLoading ||
-    !plotter.isConnected ||
-    !currentFile; /* || isPlotting */
+  const plotIsDisabled = isDisabled || !plotter.isConnected || !currentFile;
 
   return (
     <div className="w-full h-screen" {...getRootProps()}>
@@ -125,7 +130,7 @@ export const App = () => {
                   variant="primaryOutlined"
                   className="flex items-center gap-2"
                   onClick={openFile}
-                  disabled={previewIsLoading}
+                  disabled={isDisabled}
                 >
                   <FolderOpenIcon />
                   <span>Load File</span>
@@ -133,7 +138,7 @@ export const App = () => {
                 <Button
                   variant="primaryOutlined"
                   onClick={handleDeleteFileClick}
-                  disabled={previewIsLoading}
+                  disabled={isDisabled}
                 >
                   <XMarkIcon />
                 </Button>
@@ -143,11 +148,15 @@ export const App = () => {
                 variant="primaryOutlined"
                 className="flex items-center gap-2"
                 onClick={openFile}
+                disabled={isDisabled}
               >
                 <FolderOpenIcon />
                 <span>Load File</span>
               </Button>
             )}
+            <Button className="px-8" onClick={handleDebugOpen}>
+              Debug
+            </Button>
             <ButtonGroup>
               <Button
                 className="px-8"
@@ -156,7 +165,7 @@ export const App = () => {
               >
                 Plot
               </Button>
-              <Button>
+              <Button disabled={isDisabled}>
                 <ChevronDownIcon />
               </Button>
             </ButtonGroup>
@@ -179,8 +188,11 @@ export const App = () => {
         >
           <span className="text-2xl">LOADING...</span>
         </div>
-        <input {...getInputProps({ className: 'sr-only' })} />
+        <input
+          {...getInputProps({ className: 'sr-only', disabled: isDisabled })}
+        />
       </div>
+      <DebugModal active={appSnap.showDebugModal} onClose={handleDebugClose} />
       <Alerts />
     </div>
   );

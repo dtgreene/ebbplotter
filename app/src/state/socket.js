@@ -10,6 +10,7 @@ export const socketState = proxy({
     isConnected: false,
     isPlotting: false,
   },
+  plotProgress: 0,
 });
 
 export function sendMessage(message) {
@@ -32,7 +33,7 @@ export function cleanupSocket() {
 }
 
 // FireFox exponentially backs off the WebSocket close event by up to 60 seconds
-// resulting in longer auto-connect times if the socket can't connect after a
+// resulting in longer reconnect times if the socket can't connect after a
 // few attempts.
 
 // If this becomes too annoying for FireFox users, a manual timeout will need to
@@ -65,6 +66,10 @@ function handleMessage(event) {
     switch (data.type) {
       case 'status': {
         socketState.plotter = data.payload;
+        break;
+      }
+      case 'progress': {
+        socketState.plotProgress = data.payload;
         break;
       }
       default: {

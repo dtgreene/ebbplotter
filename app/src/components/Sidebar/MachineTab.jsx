@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSnapshot } from 'valtio';
 
 import { appState } from 'src/state/app';
-import { plotState } from 'src/state/plot';
 import {
   controlState,
   setPen,
@@ -13,6 +12,7 @@ import {
   eStop,
 } from 'src/state/control';
 import { socketState } from 'src/state/socket';
+import { useAppDisabled } from 'src/hooks/useAppDisabled';
 import { Button } from '../Button';
 import { Select } from '../Select';
 import { NumberInput } from '../NumberInput';
@@ -53,6 +53,14 @@ const handleDownPercentChange = ({ target }) => {
 const handleStepsPerMMChange = ({ target }) => {
   const { stepper } = appState.machine;
   stepper.stepsPerMM = target.value;
+};
+
+const handleCalculatorOpen = () => {
+  appState.showCalculatorModal = true;
+};
+
+const handleCalculatorClose = () => {
+  appState.showCalculatorModal = false;
 };
 
 const handleStepModeChange = ({ target }) => {
@@ -135,28 +143,18 @@ const handleYMinusClick = () => {
 };
 
 export const MachineTab = () => {
-  const [stepsModalActive, setStepsModalActive] = useState(false);
   const appSnap = useSnapshot(appState);
-  const plotSnap = useSnapshot(plotState);
   const socketSnap = useSnapshot(socketState);
   const controlSnap = useSnapshot(controlState);
+  const isDisabled = useAppDisabled();
 
-  const handleOpenStepsModalClick = () => {
-    setStepsModalActive(true);
-  };
-
-  const handleStepsModalClose = () => {
-    setStepsModalActive(false);
-  };
-
-  const { isLoading: previewIsLoading } = plotSnap.previewRequest;
   const { isLoading: controlIsLoading } = controlSnap.controlRequest;
 
+  const { plotter } = socketSnap;
   const { stepper, planning, servo } = appSnap.machine;
   const showAdvanced = appSnap.showAdvancedSettings;
-  const { plotter } = socketSnap;
   const controlIsDisabled =
-    previewIsLoading || controlIsLoading || !plotter.isConnected;
+    isDisabled || controlIsLoading || !plotter.isConnected;
 
   return (
     <>
@@ -169,14 +167,14 @@ export const MachineTab = () => {
           <NumberInput
             value={stepper.upSpeed}
             onChange={handleUpSpeedChange}
-            disabled={previewIsLoading}
+            disabled={isDisabled}
             label="Up Speed"
             units="mm/s"
           />
           <NumberInput
             value={stepper.downSpeed}
             onChange={handleDownSpeedChange}
-            disabled={previewIsLoading}
+            disabled={isDisabled}
             label="Down Speed"
             units="mm/s"
           />
@@ -184,7 +182,7 @@ export const MachineTab = () => {
         <NumberInput
           value={planning.acceleration}
           onChange={handleAccelerationChange}
-          disabled={previewIsLoading}
+          disabled={isDisabled}
           className="flex-1"
           label="Acceleration"
           units="mm/s²"
@@ -193,14 +191,14 @@ export const MachineTab = () => {
           <NumberInput
             value={servo.upPercent}
             onChange={handleUpPercentChange}
-            disabled={previewIsLoading}
+            disabled={isDisabled}
             label="Up Height"
             units="%"
           />
           <NumberInput
             value={servo.downPercent}
             onChange={handleDownPercentChange}
-            disabled={previewIsLoading}
+            disabled={isDisabled}
             label="Down Height"
             units="%"
           />
@@ -211,7 +209,7 @@ export const MachineTab = () => {
               <NumberInput
                 value={stepper.stepsPerMM}
                 onChange={handleStepsPerMMChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Steps Per MM"
                 units="steps/mm"
@@ -220,15 +218,15 @@ export const MachineTab = () => {
                 value={stepper.stepMode}
                 onChange={handleStepModeChange}
                 options={stepModeOptions}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Step Mode"
               />
             </div>
             <Button
               variant="primaryOutlined"
-              onClick={handleOpenStepsModalClick}
-              disabled={previewIsLoading}
+              onClick={handleCalculatorOpen}
+              disabled={isDisabled}
               className="my-4"
             >
               Open Steps Calculator
@@ -238,7 +236,7 @@ export const MachineTab = () => {
                 <CheckBox
                   value={stepper.invertX}
                   onChange={handleInvertXChange}
-                  disabled={previewIsLoading}
+                  disabled={isDisabled}
                 />
                 <FieldLabel>Invert X Axis</FieldLabel>
               </div>
@@ -246,7 +244,7 @@ export const MachineTab = () => {
                 <CheckBox
                   value={stepper.invertY}
                   onChange={handleInvertYChange}
-                  disabled={previewIsLoading}
+                  disabled={isDisabled}
                 />
                 <FieldLabel>Invert Y Axis</FieldLabel>
               </div>
@@ -255,7 +253,7 @@ export const MachineTab = () => {
               <CheckBox
                 value={stepper.coreXY}
                 onChange={handleCoreXYChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
               />
               <FieldLabel>Core XY</FieldLabel>
             </div>
@@ -268,7 +266,7 @@ export const MachineTab = () => {
             <NumberInput
               value={planning.cornerFactor}
               onChange={handleCornerFactorChange}
-              disabled={previewIsLoading}
+              disabled={isDisabled}
               label="Corner Factor"
               step="0.001"
             />
@@ -278,7 +276,7 @@ export const MachineTab = () => {
               <NumberInput
                 value={servo.minPosition}
                 onChange={handleMinPositionChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Min Position"
                 step="100"
@@ -286,7 +284,7 @@ export const MachineTab = () => {
               <NumberInput
                 value={servo.maxPosition}
                 onChange={handleMaxPositionChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Max Position"
                 step="100"
@@ -296,14 +294,14 @@ export const MachineTab = () => {
               <NumberInput
                 value={servo.duration}
                 onChange={handleDurationChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Duration"
               />
               <NumberInput
                 value={servo.rate}
                 onChange={handleRateChange}
-                disabled={previewIsLoading}
+                disabled={isDisabled}
                 className="flex-1"
                 label="Rate"
               />
@@ -394,14 +392,14 @@ export const MachineTab = () => {
             <NumberInput
               value={appSnap.jogDistance}
               onChange={handleJogDistanceChange}
-              disabled={previewIsLoading || controlIsLoading}
+              disabled={controlIsDisabled}
               className="w-32 mb-4"
               label="Jog Distance"
             />
             <NumberInput
               value={appSnap.jogSpeed}
               onChange={handleJogSpeedChange}
-              disabled={previewIsLoading || controlIsLoading}
+              disabled={controlIsDisabled}
               className="w-32"
               label="Jog Speed"
             />
@@ -426,8 +424,8 @@ export const MachineTab = () => {
         </div>
       </SidebarSection>
       <StepsCalculatorModal
-        active={stepsModalActive}
-        onClose={handleStepsModalClose}
+        active={appSnap.showCalculatorModal}
+        onClose={handleCalculatorClose}
       />
     </>
   );
