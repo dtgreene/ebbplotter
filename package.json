@@ -51,7 +51,7 @@
     "singleQuote": true
   },
   "engines": {
-    "node": "18"
+    "node": ">=18"
   },
   "engineStrict": true
 }
