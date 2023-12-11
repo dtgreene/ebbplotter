@@ -189,22 +189,22 @@ export default (fastify, options, done) => {
     },
   );
 
-  // fastify.post('/plot/stop', async (request, reply) => {
-  //   const { ebb } = fastify.plotter;
+  fastify.post('/plot/stop', async (request, reply) => {
+    const { ebb } = fastify.plotter;
 
-  //   if (!ebb.isConnected) {
-  //     return replyDisconnected(reply);
-  //   }
+    if (!ebb.isConnected) {
+      return replyDisconnected(reply);
+    }
 
-  //   try {
-  //     fastify.plotter.stop();
+    try {
+      await fastify.plotter.stop();
 
-  //     return JSON.stringify({ message: 'Success' });
-  //   } catch (error) {
-  //     request.log.error(error.message);
-  //     return reply.status(500).send(JSON.stringify({ message: error.message }));
-  //   }
-  // });
+      return JSON.stringify({ message: 'Success' });
+    } catch (error) {
+      request.log.error(error.message);
+      return reply.status(500).send(JSON.stringify({ message: error.message }));
+    }
+  });
 
   fastify.post(
     '/control/set-pen',
